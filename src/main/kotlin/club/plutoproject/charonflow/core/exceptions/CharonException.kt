@@ -1,5 +1,6 @@
 package club.plutoproject.charonflow.core.exceptions
 
+import io.lettuce.core.RedisCommandTimeoutException
 import io.lettuce.core.RedisConnectionException
 
 /**
@@ -391,7 +392,8 @@ object ExceptionUtils {
     fun isRetryable(exception: Throwable): Boolean {
         return when (exception) {
             is CharonException -> exception.retryable
-            is io.lettuce.core.RedisConnectionException -> true
+            is RedisConnectionException -> true
+            is RedisCommandTimeoutException -> true
             is java.net.ConnectException -> true
             is java.net.SocketTimeoutException -> true
             is java.io.IOException -> true
@@ -405,7 +407,8 @@ object ExceptionUtils {
     fun getErrorCode(exception: Throwable): String {
         return when (exception) {
             is CharonException -> exception.code
-            is io.lettuce.core.RedisConnectionException -> "REDIS_CONNECTION_ERROR"
+            is RedisConnectionException -> "REDIS_CONNECTION_ERROR"
+            is RedisCommandTimeoutException -> "REDIS_COMMAND_TIMEOUT_ERROR"
             is java.net.ConnectException -> "NETWORK_CONNECT_ERROR"
             is java.net.SocketTimeoutException -> "NETWORK_TIMEOUT_ERROR"
             is java.io.IOException -> "IO_ERROR"
@@ -419,7 +422,8 @@ object ExceptionUtils {
     fun getSeverity(exception: Throwable): CharonException.Severity {
         return when (exception) {
             is CharonException -> exception.severity
-            is io.lettuce.core.RedisConnectionException -> CharonException.Severity.HIGH
+            is RedisConnectionException -> CharonException.Severity.HIGH
+            is RedisCommandTimeoutException -> CharonException.Severity.MEDIUM
             is java.net.ConnectException -> CharonException.Severity.HIGH
             is java.net.SocketTimeoutException -> CharonException.Severity.MEDIUM
             is java.io.IOException -> CharonException.Severity.MEDIUM

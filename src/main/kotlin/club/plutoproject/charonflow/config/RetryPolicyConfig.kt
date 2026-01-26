@@ -59,8 +59,8 @@ data class RetryConfig(
      */
     val retryableExceptions: Set<KClass<out Throwable>> = setOf(
         // 连接相关异常
-        io.lettuce.core.RedisConnectionException::class,
-
+        RedisConnectionException::class,
+        RedisCommandTimeoutException::class,
         // 网络相关异常
         java.net.ConnectException::class,
         java.net.SocketTimeoutException::class,

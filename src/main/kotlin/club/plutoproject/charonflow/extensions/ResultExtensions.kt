@@ -5,6 +5,7 @@ import club.plutoproject.charonflow.core.exceptions.ConnectionException
 import club.plutoproject.charonflow.core.exceptions.OperationException
 import club.plutoproject.charonflow.core.exceptions.RpcException
 import club.plutoproject.charonflow.core.exceptions.SerializationException
+import io.lettuce.core.RedisCommandTimeoutException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -172,6 +173,7 @@ fun <T> Result<T>.onTimeoutError(action: (Throwable) -> Unit): Result<T> {
         when (throwable) {
             is club.plutoproject.charonflow.core.exceptions.ConnectionTimeoutException,
             is club.plutoproject.charonflow.core.exceptions.OperationTimeoutException,
+            is RedisCommandTimeoutException,
             is java.net.SocketTimeoutException -> action(throwable)
         }
     }
