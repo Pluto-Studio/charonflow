@@ -679,22 +679,22 @@ sealed class SerializationException(message: String, cause: Throwable? = null) :
 - [x] 创建异常类体系
 - [x] 定义Result扩展函数
 
-#### 阶段3：配置和数据结构重构
+#### 阶段3：配置和数据结构重构 (已完成)
 
-- [ ] 重命名SerializerConfig.kt → SerializationConfig.kt
-- [ ] 移除SerializationFormat枚举，固定使用CBOR
-- [ ] Config添加clientId字段（UUID默认，可自定义）
-- [ ] Config添加serializersModule字段
-- [ ] 重构Message类（移除泛型，payload: ByteArray，payloadType: String必需）
+- [x] 重命名SerializerConfig.kt → SerializationConfig.kt
+- [x] 移除SerializationFormat枚举，固定使用CBOR
+- [x] Config添加clientId字段（UUID默认，可自定义）
+- [x] Config添加serializersModule字段
+- [x] 重构Message类（移除泛型，payload: ByteArray，payloadType: String必需）
 
-#### 阶段4：序列化管理器实现
+#### 阶段4：序列化管理器实现 (已完成)
 
-- [ ] 创建SerializationManager类
-- [ ] 实现TypeResolver（FQN → KClass映射）
-- [ ] 实现SerializerCache（FQN → KSerializer缓存，不清空）
-- [ ] 实现findSerializer流程（SerializersModule → 反射 → 失败）
-- [ ] 实现Any::class特殊处理
-- [ ] 实现反序列化失败日志记录
+- [x] 创建SerializationManager类
+- [x] 实现TypeResolver（FQN → KClass映射）
+- [x] 实现SerializerCache（FQN → KSerializer缓存，不清空）
+- [x] 实现findSerializer流程（SerializersModule → 反射 → 失败）
+- [x] 实现Any::class特殊处理
+- [x] 实现反序列化失败日志记录
 
 #### 阶段5：API接口重构（Pub/Sub相关）
 
