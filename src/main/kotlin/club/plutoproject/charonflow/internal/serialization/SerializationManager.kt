@@ -67,7 +67,7 @@ internal class SerializationManager(
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> deserialize(bytes: ByteArray, payloadType: String, targetType: KClass<T>): T? {
         if (targetType == Any::class) {
-            return deserializeAsAny(bytes, payloadType) as T?
+            return deserializeAsAnyInternal(bytes, payloadType) as T?
         }
 
         if (payloadType != TypeResolver.getFQN(targetType)) {
@@ -85,15 +85,15 @@ internal class SerializationManager(
     }
 
     /**
-     * 将消息反序列化为 Any 类型
-     * 
+     * 将消息反序列化为 Any 类型（内部实现）
+     *
      * 特殊处理：不进行类型检查，直接按 payloadType 反序列化，然后转换为 Any。
-     * 
+     *
      * @param bytes 字节数组
      * @param payloadType 消息中携带的类型信息（FQN）
      * @return 反序列化后的对象，如果失败则返回 null
      */
-    private fun deserializeAsAny(bytes: ByteArray, payloadType: String): Any? {
+    private fun deserializeAsAnyInternal(bytes: ByteArray, payloadType: String): Any? {
         return try {
             val kClass = TypeResolver.getKClass<Any>(payloadType)
                 ?: throw TypeNotRegisteredException(
@@ -156,5 +156,18 @@ internal class SerializationManager(
         } catch (e: TypeNotRegisteredException) {
             false
         }
+    }
+
+    /**
+     * 将消息反序列化为 Any 类型（公开版本）
+     * 
+     * 特殊处理：不进行类型检查，直接按 payloadType 反序列化。
+     * 
+     * @param bytes 字节数组
+     * @param payloadType 消息中携带的类型信息（FQN）
+     * @return 反序列化后的对象，如果失败则返回 null
+     */
+    fun deserializeAsAny(bytes: ByteArray, payloadType: String): Any? {
+        return deserializeAsAnyInternal(bytes, payloadType)
     }
 }

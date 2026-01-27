@@ -29,7 +29,12 @@ internal class PubSubSubscription(
     /**
      * 消息处理函数
      */
-    private val handler: suspend (message: Any) -> Unit
+    private val handler: suspend (message: Any) -> Unit,
+    /**
+     * 订阅的消息类型（FQN）
+     * 用于类型匹配，Any::class 时使用 "kotlin.Any"
+     */
+    val messageType: String
 ) : Subscription {
 
     private var _lastActivityTime: Long = lastActivityTime
@@ -147,13 +152,15 @@ internal class PubSubSubscription(
         }
 
         updateLastActivityTime()
-        try {
+        return try {
             handler(message)
             incrementMessageCount()
-            return true
+            true
         } catch (e: Exception) {
-            logger.error("Error in subscription {} handler: {}", id, e.message, e)
-            return false
+            logger.error("Handler threw exception in subscription {}, cancelling subscription. Error: {}", id, e.message, e)
+            _isActive = false
+            updateStats { it.copy(isActive = false) }
+            false
         }
     }
 

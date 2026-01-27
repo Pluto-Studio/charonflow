@@ -736,11 +736,12 @@ sealed class SerializationException(message: String, cause: Throwable? = null) :
 - [x] 修复实现缺陷：Subscription 持有 handler，添加消息处理逻辑
 - [x] 修复实现缺陷：正确使用异常类型和 Logger
 
-#### 阶段6：异常和错误处理
+#### 阶段6：异常和错误处理 (已完成)
 
-- [ ] 添加SerializationException子类
-- [ ] 实现handler异常终止订阅逻辑
-- [ ] 实现类型不匹配静默忽略逻辑
+- [x] 添加SerializationException子类（代码中已存在：SerializeFailedException, DeserializeFailedException, TypeNotRegisteredException, TypeMismatchException）
+- [x] 实现handler异常终止订阅逻辑（PubSubSubscription.handleReceivedMessage捕获异常后设置_isActive=false）
+- [x] 实现类型不匹配静默忽略逻辑（CharonFlowImpl.handleIncomingMessage中检查类型匹配，不匹配则DEBUG日志并跳过）
+- [x] 添加消息分发逻辑（CharonFlowImpl.handleIncomingMessage统一处理接收到的消息）
 
 #### 阶段7：Pub/Sub模式实现（MVP核心 - 必须完成）
 
@@ -895,7 +896,13 @@ kotlin {
         - Subscription持用handler，实现handleReceivedMessage
         - 修复异常类型（TypeNotRegisteredException而非SubscriptionNotFoundException）
         - 替换println为Logger
-- **当前状态**: 阶段5完成，准备开始阶段6（异常和错误处理）
+- **当前状态**: 阶段6完成，准备开始阶段7（Pub/Sub模式实现）
+- **2025-01-27**: 完成阶段6（异常和错误处理）
+    - SerializationException子类已存在（SerializeFailedException, DeserializeFailedException, TypeNotRegisteredException, TypeMismatchException）
+    - 实现handler异常终止订阅逻辑（PubSubSubscription.handleReceivedMessage捕获异常后设置_isActive=false并更新stats）
+    - 实现类型不匹配静默忽略逻辑（CharonFlowImpl.handleIncomingMessage中检查类型匹配，不匹配则DEBUG日志并跳过）
+    - 添加消息分发逻辑（CharonFlowImpl.handleIncomingMessage统一处理接收到的消息）
+    - PubSubSubscription添加messageType字段用于类型匹配
 
 ---
 
