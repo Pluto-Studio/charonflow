@@ -743,6 +743,7 @@ sealed class SerializationException(message: String, cause: Throwable? = null) :
 - [ ] 实现流畅的DSL构建器
 - [ ] 添加错误处理扩展函数
 - [ ] 编写基础使用示例
+- [ ] 重构Message为内部类，提供DSL API用于消息构建
 
 ## 依赖版本
 
