@@ -82,6 +82,8 @@ class CharonFlowPubSubTest {
         assertEquals(testMessage.id, receivedMessages[0].id)
         assertEquals(testMessage.content, receivedMessages[0].content)
 
+        println(receivedMessages.first())
+
         // 取消订阅
         subscription.unsubscribe()
         assertTrue(!subscription.isActive)
