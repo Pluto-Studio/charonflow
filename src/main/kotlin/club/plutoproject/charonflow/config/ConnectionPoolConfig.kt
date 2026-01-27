@@ -1,5 +1,7 @@
 package club.plutoproject.charonflow.config
 
+private const val MAX_CONNECTION_THREADS = 6
+
 /**
  * 连接池配置
  *
@@ -72,7 +74,7 @@ data class ConnectionPoolConfig(
          */
         private fun calculateDefaultMaxConnections(): Int {
             val cpuCores = Runtime.getRuntime().availableProcessors()
-            return maxOf(cpuCores / 2, 4)
+            return maxOf(cpuCores / 2, MAX_CONNECTION_THREADS)
         }
     }
 }
