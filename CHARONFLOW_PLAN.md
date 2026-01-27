@@ -3,6 +3,7 @@
 ## 项目概述
 
 CharonFlow 是一个基于 Kotlin + Redis 的轻量级实时通讯框架，支持多种通讯范式：
+
 - Pub/Sub（发布-订阅）
 - RPC（单点和流式）
 - Req/Rsp（请求-响应）
@@ -25,6 +26,7 @@ CharonFlow 是一个基于 Kotlin + Redis 的轻量级实时通讯框架，支�
 ## 设计决策
 
 ### 1. 连接管理
+
 - **自动配置**: 默认 `maxTotal = max(CPU核心数/2, 6)`（MAX_CONNECTION_THREADS常量）
 - **可覆盖**: 通过 `ConnectionPoolConfig` 允许用户自定义
 - **包装策略**: 所有 Lettuce 对象都包装，避免依赖冲突
@@ -32,6 +34,7 @@ CharonFlow 是一个基于 Kotlin + Redis 的轻量级实时通讯框架，支�
 - **连接泄露防护**: 自动检测和清理
 
 ### 2. 序列化策略
+
 - **主要机制**: Kotlinx Serialization + CBOR（固定格式，不提供其他格式选择）
 - **类型安全**: 强制使用 `@Serializable` 注解，不提供 GSON fallback
 - **注册机制**: 仅通过 `Config.serializersModule` 在初始化时配置，不支持运行时注册
@@ -42,20 +45,23 @@ CharonFlow 是一个基于 Kotlin + Redis 的轻量级实时通讯框架，支�
 - **错误处理**: 反序列化失败打印日志不终止订阅；handler异常终止订阅并记录错误
 
 ### 3. 错误处理
+
 - **统一API**: 所有公共方法返回 `Result<T>`
 - **异常分类**:
-  - `ConnectionException`: 连接相关错误
-  - `TimeoutException`: 操作超时
-  - `SerializationException`: 序列化错误
-  - `CharonException`: 基础异常类
+    - `ConnectionException`: 连接相关错误
+    - `TimeoutException`: 操作超时
+    - `SerializationException`: 序列化错误
+    - `CharonException`: 基础异常类
 - **扩展函数**: 提供丰富的 `Result<T>` 扩展函数
 
 ### 4. 协程管理
+
 - **调度器**: 固定使用 `Dispatchers.IO`
 - **作用域**: 使用 `SupervisorJob` 防止异常传播
 - **资源管理**: 实现 `Closeable` 接口，支持 `use` 语法
 
 ### 5. 订阅管理（四种取消方式）
+
 1. **Subscription 对象**: `subscribe()` 返回 `Subscription`，调用 `unsubscribe()`
 2. **Handler 内取消**: handler 参数包含 `cancel()` 函数
 3. **协程作用域集成**: 订阅绑定到协程作用域
@@ -63,11 +69,13 @@ CharonFlow 是一个基于 Kotlin + Redis 的轻量级实时通讯框架，支�
 5. **pause/resume**: 支持暂停和恢复订阅（pause状态下忽略消息，不缓冲）
 
 ### 6. RPC 参数设计
+
 - **单参数API**: `fun <T, R> rpc(method: String, param: T): Result<R>`（注册方法改为非suspend）
 - **多参数支持**: 通过 `RpcRequest` wrapper 类，`serializedParams: List<ByteArray>` 存储每个参数的序列化数据
 - **可变参数辅助**: `fun <R> rpc(method: String, vararg params: Any): Result<R>`
 
 ### 7. Message 统一数据格式
+
 - **移除泛型**: `Message<T>` → `Message`
 - **统一存储**: `payload: ByteArray` 存储用户数据的序列化结果
 - **类型信息**: `payloadType: String` 必需，存储类型的完全限定名（FQN）
@@ -75,26 +83,30 @@ CharonFlow 是一个基于 Kotlin + Redis 的轻量级实时通讯框架，支�
 - **RpcRequest包装**: RpcRequest 作为 Message.payload 的内容发送（Message套一层RpcRequest）
 
 ### 8. 客户端ID管理
+
 - **自动生成**: 默认使用 `UUID.randomUUID().toString()`
 - **自定义支持**: 可通过 `Config.clientId` 指定自定义ID
 - **用途**: 用于点对点通信（Message.target字段）
 - **自动填充**: 发布消息时自动设置 Message.source = clientId
 
 ### 9. 点对点Req/Rsp设计
+
 - **目标指定**: `request()` 和 `onRequest()` 支持 `targetClientId` 参数
 - **冲突检测**: 同一channel仅允许一个处理器注册，冲突时抛出 `AlreadyRegisteredException`
 - **查询方法**: 提供 `getRegisteredChannels()` 查询已注册的channel
 - **广播兼容**: 初始阶段暂不支持广播模式
 
 ### 10. subscribe 类型匹配策略
+
 - **严格匹配**: `payloadType` 必须与订阅时指定的 `KClass.qualifiedName` 完全相同
 - **Any特殊处理**: `subscribe<Any>(Any::class, ...)` 接收所有类型消息
-  - 内部不进行类型检查
-  - 按实际 `payloadType` 反序列化后 cast 到 `Any`
-  - 调用handler
+    - 内部不进行类型检查
+    - 按实际 `payloadType` 反序列化后 cast 到 `Any`
+    - 调用handler
 - **类型不匹配处理**: 静默忽略（可选DEBUG日志）
 
 ### 11. SerializersModule集成
+
 - **仅初始化配置**: 通过 `Config.serializersModule` 在创建 CharonFlow 时提供
 - **不可运行时修改**: 不提供运行时注册序列化器的API
 - **查找优先级**: SerializersModule注册 → 反射查找@Serializable类 → 失败
@@ -103,6 +115,7 @@ CharonFlow 是一个基于 Kotlin + Redis 的轻量级实时通讯框架，支�
 ## API Demo 示例（新架构）
 
 ### Demo 1: 基础 Pub/Sub（类型安全版本）
+
 ```kotlin
 // 创建 CharonFlow 实例（配置SerializersModule）
 val config = Config(
@@ -144,6 +157,7 @@ anySubscription.unsubscribe()
 ```
 
 ### Demo 2: 请求-响应模式（点对点）
+
 ```kotlin
 // 服务端：处理请求
 charon.onRequest(
@@ -173,6 +187,7 @@ val channels = charon.getRegisteredChannels()  // Set<String>
 ```
 
 ### Demo 3: RPC 调用
+
 ```kotlin
 // 注册RPC方法（handler可suspend）
 charon.registerRpc(
@@ -200,6 +215,7 @@ val sum: Result<Int> = charon.rpc("add", RpcRequest(listOf(10, 20, 30)))
 ```
 
 ### Demo 4: Subscription 管理
+
 ```kotlin
 // 订阅
 val subscription = charon.subscribe(
@@ -207,7 +223,7 @@ val subscription = charon.subscribe(
     kclass = MyEvent::class
 ) { event: MyEvent ->
     println("Received: $event")
-    
+
     // 暂停/恢复
     if (event.shouldPause) {
         subscription.pause()
@@ -215,7 +231,7 @@ val subscription = charon.subscribe(
     if (event.shouldResume) {
         subscription.resume()
     }
-    
+
     // 内部取消
     if (event.isTerminal) {
         subscription.unsubscribe()
@@ -231,6 +247,7 @@ subscription.resume()
 ```
 
 ### Demo 5: SerializersModule 配置
+
 ```kotlin
 // 创建SerializersModule
 val module = SerializersModule {
@@ -259,6 +276,7 @@ val myClientId = charon.getClientId()
 ```
 
 ### Demo 6: 错误处理策略
+
 ```kotlin
 // 类型不匹配：静默忽略（DEBUG日志）
 charon.subscribe(topic, String::class) { msg: String ->
@@ -334,67 +352,68 @@ src/main/kotlin/club/plutoproject/charonflow/
 ## 核心接口签名（修订版）
 
 ### 1. CharonFlow 主接口（新架构）
+
 ```kotlin
 interface CharonFlow : Closeable {
     // ============ 配置和状态 ============
     val config: Config
     val isConnected: Boolean
     fun getClientId(): String
-    
+
     // ============ 序列化器注册（仅初始化） ============
     // 注：序列化器通过Config.serializersModule配置，不支持运行时注册
-    
+
     // ============ Pub/Sub ============
     // 发布（handler接收反序列化对象）
     suspend fun publish(topic: String, message: Any): Result<Unit>
-    
+
     // 订阅（非suspend注册，类型安全）
     fun <T : Any> subscribe(
         topic: String,
         kclass: KClass<T>,
         handler: suspend (message: T) -> Unit
     ): Result<Subscription>
-    
+
     // 订阅Any类型（接收所有类型）
     fun subscribe(
         topic: String,
         kclass: KClass<Any>,
         handler: suspend (message: Any) -> Unit
     ): Result<Subscription>
-    
+
     // ============ 请求-响应模式（点对点） ============
     suspend fun <T : Any> request(
         channel: String,
         request: Any,
         targetClientId: String? = null  // 可选指定目标
     ): Result<T>
-    
+
     fun <T : Any, R : Any> onRequest(
         channel: String,
         requestClass: KClass<T>,
         handler: suspend (request: T) -> R
     ): Result<Unit>
-    
+
     // ============ RPC ============
     suspend fun <T : Any, R : Any> rpc(method: String, param: T): Result<R>
     suspend fun <R : Any> rpc(method: String, request: RpcRequest): Result<R>
     suspend fun <R : Any> rpc(method: String, vararg params: Any): Result<R>
-    
+
     fun <T : Any, R : Any> registerRpc(
         method: String,
         requestClass: KClass<T>,
         handler: suspend (request: T) -> R
     ): Result<Unit>
-    
+
     // ============ 流式RPC ============
     suspend fun <T : Any, R : Any> streamRpc(method: String, param: T): Flow<R>
-    
+
     fun <T : Any, R : Any> registerStreamRpc(
         method: String,
         requestClass: KClass<T>,
         handler: suspend (param: T) -> Flow<R>
     ): Result<Unit>
-    
+
     // ============ 组播/广播 ============
     suspend fun joinMulticastGroup(group: String): Result<Unit>
     suspend fun multicast(group: String, message: Any): Result<Unit>
@@ -403,14 +422,14 @@ interface CharonFlow : Closeable {
         kclass: KClass<Any>,
         handler: suspend (message: Any) -> Unit
     ): Result<Subscription>
-    
+
     suspend fun broadcast(channel: String, message: Any): Result<Unit>
     suspend fun onBroadcast(
         channel: String,
         kclass: KClass<Any>,
         handler: suspend (message: Any) -> Unit
     ): Result<Subscription>
-    
+
     // ============ 工具方法 ============
     fun getRegisteredChannels(): Set<String>
     fun getRegisteredRpcMethods(): Set<String>
@@ -419,6 +438,7 @@ interface CharonFlow : Closeable {
 ```
 
 ### 2. 配置类签名（修订版）
+
 ```kotlin
 // 主配置
 data class Config(
@@ -466,13 +486,14 @@ data class ConnectionPoolConfig(
 ```
 
 ### 3. Message（新架构，移除泛型）
+
 ```kotlin
 @Serializable
 data class Message(
     // 核心数据字段（必需）
     val payload: ByteArray,           // 用户数据的序列化结果
     val payloadType: String,          // 类型的完全限定名（FQN）
-    
+
     // 元数据字段
     val id: String = UUID.randomUUID().toString(),
     val timestamp: Long = System.currentTimeMillis(),
@@ -488,13 +509,13 @@ data class Message(
         require(priority in 0..9)
         require(ttl >= 0)
     }
-    
+
     // 工具方法
     fun withHeader(key: String, value: String): Message
     fun withTarget(target: String): Message
     fun withCorrelationId(correlationId: String): Message
     fun isExpired(): Boolean
-    
+
     companion object {
         fun request(body: Any, replyTo: String, correlationId: String? = null): Message
         fun response(body: Any, correlationId: String): Message
@@ -504,6 +525,7 @@ data class Message(
 ```
 
 ### 4. RpcRequest（新架构）
+
 ```kotlin
 @Serializable
 data class RpcRequest(
@@ -514,12 +536,12 @@ data class RpcRequest(
     init {
         require(serializedParams.size == paramTypes.size)
     }
-    
+
     // 便捷方法
     fun <T> getParam(index: Int): T?
     fun <T> deserializeParams(): List<T>
     fun withMetadata(key: String, value: String): RpcRequest
-    
+
     companion object {
         fun of(vararg params: Any): RpcRequest
         fun single(param: Any): RpcRequest
@@ -528,6 +550,7 @@ data class RpcRequest(
 ```
 
 ### 5. Subscription 接口
+
 ```kotlin
 interface Subscription {
     // 属性
@@ -539,20 +562,20 @@ interface Subscription {
     val isPaused: Boolean
     val messageCount: Long
     val stats: SubscriptionStats
-    
+
     // 取消订阅
     suspend fun unsubscribe(): Result<Unit>
     fun unsubscribeAsync()
-    
+
     // 订阅管理
     suspend fun pause(): Result<Unit>
     suspend fun resume(): Result<Unit>
     suspend fun updateHandler(handler: suspend (message: Any) -> Unit): Result<Unit>
-    
+
     // 统计信息
     fun resetStats()
     fun getDetailedStats(): DetailedSubscriptionStats
-    
+
     // 工具方法
     suspend fun await(): Result<Unit>
     fun onComplete(callback: (Result<Unit>) -> Unit)
@@ -561,6 +584,7 @@ interface Subscription {
 ```
 
 ### 6. SerializationManager（新核心组件）
+
 ```kotlin
 class SerializationManager(
     private val serializersModule: SerializersModule,
@@ -569,21 +593,22 @@ class SerializationManager(
     // 缓存：FQN → KSerializer（不清空）
     private val serializerCache: ConcurrentHashMap<String, KSerializer<*>> = ...
     private val classCache: ConcurrentHashMap<String, KClass<*>> = ...
-    
+
     // 序列化/反序列化
     fun serialize(obj: Any): ByteArray
     fun deserialize(bytes: ByteArray, typeName: String): Any?
-    
+
     // 类型处理
     fun canDeserialize(typeName: String): Boolean
     fun isTypeCompatible(messageType: String, subscribedClass: KClass<*>): Boolean
-    
+
     // Any特殊处理
     fun createAnySerializer(): KSerializer<Any>
 }
 ```
 
 ### 7. 新增异常类
+
 ```kotlin
 // channel/RPC方法注册冲突
 class AlreadyRegisteredException(
@@ -595,7 +620,8 @@ class AlreadyRegisteredException(
 // 序列化异常
 sealed class SerializationException(message: String, cause: Throwable? = null) : CharonException(message, cause) {
     class NotSerializable(val typeName: String) : SerializationException("Type not serializable: $typeName")
-    class DeserializeFailed(val typeName: String, cause: Throwable) : SerializationException("Failed to deserialize: $typeName", cause)
+    class DeserializeFailed(val typeName: String, cause: Throwable) :
+        SerializationException("Failed to deserialize: $typeName", cause)
     class SerializerNotFound(val typeName: String) : SerializationException("No serializer found for type: $typeName")
 }
 ```
@@ -605,21 +631,23 @@ sealed class SerializationException(message: String, cause: Throwable? = null) :
 **首要目标**：实现一个包含 **Pub/Sub（发布-订阅）** 这一种通讯范式的轻量级框架。
 
 ### MVP 包含的功能
+
 1. **Pub/Sub 基础功能**：
-   - 发布消息（自动序列化）
-   - 订阅消息（类型安全，支持 Any::class 接收所有类型）
-   - 订阅管理（四种取消方式 + pause/resume）
-   - 消息路由和传递
-   - 序列化管理（固定 CBOR 格式，仅初始化时配置 SerializersModule）
+    - 发布消息（自动序列化）
+    - 订阅消息（类型安全，支持 Any::class 接收所有类型）
+    - 订阅管理（四种取消方式 + pause/resume）
+    - 消息路由和传递
+    - 序列化管理（固定 CBOR 格式，仅初始化时配置 SerializersModule）
 
 2. **基础架构**：
-   - 配置系统（包含 clientId、serializersModule 等）
-   - 消息数据结构（Message 类重构）
-   - 序列化管理器（SerializationManager）
-   - 错误处理策略
-   - 连接池管理
+    - 配置系统（包含 clientId、serializersModule 等）
+    - 消息数据结构（Message 类重构）
+    - 序列化管理器（SerializationManager）
+    - 错误处理策略
+    - 连接池管理
 
 ### MVP 不包含的功能（后续讨论和实现）
+
 1. **多参数 RPC 设计**：相关讨论延后，保留 RpcRequest 类和 Demo 代码
 2. **Req/Rsp（请求-响应）模式**：点对点设计延后，保留 API 接口定义
 3. **Multicast（组播）和 Broadcast（广播）**：高级通讯模式延后
@@ -627,6 +655,7 @@ sealed class SerializationException(message: String, cause: Throwable? = null) :
 5. **多序列化格式支持**：固定 CBOR，移除 SerializationFormat 枚举
 
 ### 实现优先级
+
 1. **最高**：完成基础重构（阶段3.1-3.4）和 Pub/Sub 实现（阶段4）
 2. **延后**：阶段3.5（点对点Req/Rsp）和阶段5（其他通讯模式）标记为 post-MVP
 3. **保留**：所有相关 To Do 项和 Demo 代码保留不变，但状态标记为 post-MVP
@@ -638,17 +667,20 @@ sealed class SerializationException(message: String, cause: Throwable? = null) :
 ### MVP 阶段（必须完成）
 
 #### 阶段1：基础架构搭建 (已完成)
+
 - [x] 更新构建配置（添加依赖和插件）
 - [x] 创建基础包结构目录
 - [x] 创建日志配置文件（logback.xml）
 
 #### 阶段2：核心接口和配置定义 (已完成)
+
 - [x] 创建Config配置类体系
 - [x] 定义核心接口（CharonFlow、Message等）
 - [x] 创建异常类体系
 - [x] 定义Result扩展函数
 
 #### 阶段3：配置和数据结构重构
+
 - [ ] 重命名SerializerConfig.kt → SerializationConfig.kt
 - [ ] 移除SerializationFormat枚举，固定使用CBOR
 - [ ] Config添加clientId字段（UUID默认，可自定义）
@@ -656,6 +688,7 @@ sealed class SerializationException(message: String, cause: Throwable? = null) :
 - [ ] 重构Message类（移除泛型，payload: ByteArray，payloadType: String必需）
 
 #### 阶段4：序列化管理器实现
+
 - [ ] 创建SerializationManager类
 - [ ] 实现TypeResolver（FQN → KClass映射）
 - [ ] 实现SerializerCache（FQN → KSerializer缓存，不清空）
@@ -664,17 +697,20 @@ sealed class SerializationException(message: String, cause: Throwable? = null) :
 - [ ] 实现反序列化失败日志记录
 
 #### 阶段5：API接口重构（Pub/Sub相关）
+
 - [ ] CharonFlow.subscribe改为非suspend，handler接收反序列化对象
 - [ ] 添加Any::class特殊处理逻辑
 - [ ] Subscription调整updateHandler等方法签名
 - [ ] Subscription实现pause状态忽略消息逻辑
 
 #### 阶段6：异常和错误处理
+
 - [ ] 添加SerializationException子类
 - [ ] 实现handler异常终止订阅逻辑
 - [ ] 实现类型不匹配静默忽略逻辑
 
 #### 阶段7：Pub/Sub模式实现（MVP核心 - 必须完成）
+
 - [ ] 实现Pub/Sub核心功能
 - [ ] 实现订阅管理（四种取消方式 + pause/resume）
 - [ ] 创建测试用例验证Pub/Sub
@@ -682,6 +718,7 @@ sealed class SerializationException(message: String, cause: Throwable? = null) :
 ### Post-MVP阶段（后续实现）
 
 #### 阶段8：RPC和Req/Rsp基础架构 (post-MVP)
+
 - [ ] 重构RpcRequest类（serializedData → serializedParams: List<ByteArray>）
 - [ ] CharonFlow.onRequest改为非suspend
 - [ ] CharonFlow.registerRpc改为非suspend
@@ -689,35 +726,39 @@ sealed class SerializationException(message: String, cause: Throwable? = null) :
 - [ ] 添加AlreadyRegisteredException
 
 #### 阶段9：点对点Req/Rsp实现 (post-MVP)
+
 - [ ] 创建ChannelRegistry（channel注册表，冲突检测）
 - [ ] 实现Message.source自动填充clientId
 - [ ] 实现Message.target路由逻辑
 - [ ] 更新Message工厂方法支持target字段
 
 #### 阶段10：其他通讯模式实现 (post-MVP)
+
 - [ ] 实现请求-响应模式（点对点）
 - [ ] 实现RPC系统（单参数+多参数，嵌套Message）
 - [ ] 实现组播和广播
 
 #### 阶段11：API完善和DSL构建器 (post-MVP)
+
 - [ ] 实现流畅的DSL构建器
 - [ ] 添加错误处理扩展函数
 - [ ] 编写基础使用示例
 
 ## 依赖版本
+
 ```kotlin
 // build.gradle.kts 中需要添加的依赖
 dependencies {
     // Redis 客户端
     implementation("io.lettuce:lettuce-core:6.3.2.RELEASE")
-    
+
     // 序列化
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-cbor:1.7.0")
-    
+
     // 协程
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
-    
+
     // 日志
     implementation("org.slf4j:slf4j-api:2.0.16")
     implementation("ch.qos.logback:logback-classic:1.5.12")
@@ -725,6 +766,7 @@ dependencies {
 ```
 
 ## 构建配置要点
+
 ```kotlin
 // 需要添加的插件
 plugins {
@@ -739,6 +781,7 @@ kotlin {
 ```
 
 ## 日志配置要点
+
 ```xml
 <!-- logback.xml 配置（仅控制台输出） -->
 <configuration>
@@ -748,16 +791,16 @@ kotlin {
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    
+
     <!-- CharonFlow 相关包日志级别 -->
     <!-- 默认使用 INFO 级别，用户可以在自己的配置中覆盖 -->
     <logger name="club.plutoproject.charonflow" level="INFO"/>
-    
+
     <!-- 第三方库日志级别控制 -->
     <logger name="io.lettuce" level="WARN"/>
     <logger name="io.netty" level="WARN"/>
     <logger name="kotlinx.coroutines" level="WARN"/>
-    
+
     <!-- 根日志配置 -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
@@ -766,11 +809,13 @@ kotlin {
 ```
 
 ## 实现优先级（MVP聚焦）
+
 1. **最高优先级**：完成阶段3-6（架构重构）和阶段7（Pub/Sub实现）
 2. **延后/Post-MVP**：阶段8-11（RPC、Req/Rsp、其他通讯模式等高级功能）
 3. **保留设计**：多参数 RPC、Req/Rsp 等复杂设计保留 Demo 代码和 To Do 项，后续讨论
 
 ## 注意事项
+
 1. 所有公共 API 必须返回 `Result<T>` 类型
 2. 序列化必须使用 Kotlinx Serialization，强制类型安全
 3. 连接池默认基于 CPU 核心数自动配置
@@ -778,24 +823,25 @@ kotlin {
 5. RPC 支持单参数和多参数两种方式
 
 ## 更新记录
+
 - **2025-01-26**: 创建初始计划文档，包含完整的设计决策、API Demo 和实现计划
 - **2025-01-27**: 完成阶段2代码，编译检查通过
 - **2025-01-27**: Code Review反馈，架构重构（重大变更）
-  - 序列化格式固定为CBOR，移除用户配置
-  - Message/RpcRequest统一使用ByteArray存储
-  - 添加clientId和serializersModule配置
-  - API改为非suspend注册，handler接收反序列化对象
-  - 实现点对点Req/Rsp（基于clientId）
-  - 订阅支持pause/resume，pause状态忽略消息
-  - 添加类型缓存和序列化器查找优先级
-  - 添加AlreadyRegisteredException冲突检测
+    - 序列化格式固定为CBOR，移除用户配置
+    - Message/RpcRequest统一使用ByteArray存储
+    - 添加clientId和serializersModule配置
+    - API改为非suspend注册，handler接收反序列化对象
+    - 实现点对点Req/Rsp（基于clientId）
+    - 订阅支持pause/resume，pause状态忽略消息
+    - 添加类型缓存和序列化器查找优先级
+    - 添加AlreadyRegisteredException冲突检测
 - **2025-01-27**: 聚焦MVP范围，明确仅实现Pub/Sub基础功能
-  - 添加MVP范围定义，明确包含和不包含的功能
-  - 调整实现优先级，聚焦阶段3-6（架构重构）和阶段7（Pub/Sub实现）
-  - 标记阶段8-11为post-MVP，保留相关设计和Demo代码
+    - 添加MVP范围定义，明确包含和不包含的功能
+    - 调整实现优先级，聚焦阶段3-6（架构重构）和阶段7（Pub/Sub实现）
+    - 标记阶段8-11为post-MVP，保留相关设计和Demo代码
 - **2025-01-27**: 优化To Do结构，将RPC相关重构移至Post-MVP
-  - 重新编号阶段为连续递增（阶段3-11）
-  - 将RpcRequest重构、onRequest、registerRpc等任务移至阶段8
+    - 重新编号阶段为连续递增（阶段3-11）
+    - 将RpcRequest重构、onRequest、registerRpc等任务移至阶段8
 - **当前状态**: 阶段3重构准备开始（配置和数据结构重构），聚焦MVP实现
 
 ---

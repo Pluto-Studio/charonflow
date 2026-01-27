@@ -1,7 +1,7 @@
 package club.plutoproject.charonflow.core
 
 import kotlinx.serialization.Serializable
-import java.util.UUID
+import java.util.*
 
 /**
  * 消息抽象
@@ -16,65 +16,63 @@ data class Message(
      * 用户数据的序列化结果（ByteArray）
      */
     val payload: ByteArray,
-    
+
     /**
      * 负载类型
      * 类型的完全限定名（FQN），必需
      */
     val payloadType: String,
-    
+
     /**
      * 消息 ID
      * 用于消息追踪和去重
      */
     val id: String = UUID.randomUUID().toString(),
-    
+
     /**
      * 消息时间戳（毫秒）
      * 消息创建的时间
      */
     val timestamp: Long = System.currentTimeMillis(),
-    
 
-    
+
     /**
      * 消息头
      * 包含额外的元数据
      */
     val headers: Map<String, String> = emptyMap(),
-    
 
-    
+
     /**
      * 消息来源
      * 发送消息的客户端标识
      */
     val source: String? = null,
-    
+
     /**
      * 消息目标
      * 接收消息的客户端标识（用于点对点通信）
      */
     val target: String? = null,
-    
+
     /**
      * 消息优先级
      * 0-9，数字越大优先级越高
      */
     val priority: Int = 5,
-    
+
     /**
      * 消息过期时间（毫秒）
      * 0 表示永不过期
      */
     val ttl: Long = 0L,
-    
+
     /**
      * 关联 ID
      * 用于关联请求和响应
      */
     val correlationId: String? = null,
-    
+
     /**
      * 回复地址
      * 用于请求-响应模式，指定响应发送到哪里
@@ -86,7 +84,7 @@ data class Message(
         require(priority in 0..9) { "Priority must be between 0 and 9" }
         require(ttl >= 0) { "TTL must be non-negative" }
     }
-    
+
     /**
      * 检查消息是否已过期
      */
@@ -95,7 +93,7 @@ data class Message(
         val currentTime = System.currentTimeMillis()
         return currentTime > timestamp + ttl
     }
-    
+
     /**
      * 获取消息剩余存活时间
      *
@@ -107,7 +105,7 @@ data class Message(
         val remaining = timestamp + ttl - currentTime
         return maxOf(remaining, 0)
     }
-    
+
     /**
      * 添加消息头
      *
@@ -120,7 +118,7 @@ data class Message(
         newHeaders[key] = value
         return copy(headers = newHeaders)
     }
-    
+
     /**
      * 添加多个消息头
      *
@@ -132,7 +130,7 @@ data class Message(
         mergedHeaders.putAll(newHeaders)
         return copy(headers = mergedHeaders)
     }
-    
+
     /**
      * 移除消息头
      *
@@ -144,7 +142,7 @@ data class Message(
         newHeaders.remove(key)
         return copy(headers = newHeaders)
     }
-    
+
     /**
      * 获取消息头值
      *
@@ -152,7 +150,7 @@ data class Message(
      * @return 头值，如果不存在返回 null
      */
     fun getHeader(key: String): String? = headers[key]
-    
+
     /**
      * 检查是否包含指定消息头
      *
@@ -160,7 +158,7 @@ data class Message(
      * @return 如果包含返回 true
      */
     fun hasHeader(key: String): Boolean = headers.containsKey(key)
-    
+
     /**
      * 设置消息来源
      *
@@ -168,7 +166,7 @@ data class Message(
      * @return 新的 Message 实例
      */
     fun withSource(source: String): Message = copy(source = source)
-    
+
     /**
      * 设置消息目标
      *
@@ -176,7 +174,7 @@ data class Message(
      * @return 新的 Message 实例
      */
     fun withTarget(target: String): Message = copy(target = target)
-    
+
     /**
      * 设置关联 ID
      *
@@ -184,7 +182,7 @@ data class Message(
      * @return 新的 Message 实例
      */
     fun withCorrelationId(correlationId: String): Message = copy(correlationId = correlationId)
-    
+
     /**
      * 设置回复地址
      *
@@ -192,7 +190,7 @@ data class Message(
      * @return 新的 Message 实例
      */
     fun withReplyTo(replyTo: String): Message = copy(replyTo = replyTo)
-    
+
     /**
      * 设置消息优先级
      *
@@ -200,7 +198,7 @@ data class Message(
      * @return 新的 Message 实例
      */
     fun withPriority(priority: Int): Message = copy(priority = priority)
-    
+
     /**
      * 设置消息过期时间
      *
@@ -208,6 +206,6 @@ data class Message(
      * @return 新的 Message 实例
      */
     fun withTtl(ttl: Long): Message = copy(ttl = ttl)
-    
+
 
 }

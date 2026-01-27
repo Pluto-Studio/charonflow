@@ -1,8 +1,8 @@
 package club.plutoproject.charonflow
 
 import club.plutoproject.charonflow.config.Config
-import club.plutoproject.charonflow.core.Subscription
 import club.plutoproject.charonflow.core.RpcRequest
+import club.plutoproject.charonflow.core.Subscription
 import kotlinx.coroutines.flow.Flow
 import java.io.Closeable
 
@@ -17,28 +17,28 @@ import java.io.Closeable
  * - Stream RPC（流式 RPC）
  */
 interface CharonFlow : Closeable {
-    
+
     // region 配置和状态
-    
+
     /**
      * 获取当前配置
      */
     val config: Config
-    
+
     /**
      * 检查是否已连接
      */
     val isConnected: Boolean
-    
+
     /**
      * 获取连接状态信息
      */
     val connectionInfo: ConnectionInfo
-    
+
     // endregion
-    
+
     // region Pub/Sub 模式
-    
+
     /**
      * 发布消息到指定主题
      *
@@ -47,7 +47,7 @@ interface CharonFlow : Closeable {
      * @return 发布结果，成功返回 Unit，失败返回错误信息
      */
     suspend fun publish(topic: String, message: Any): Result<Unit>
-    
+
     /**
      * 订阅指定主题
      *
@@ -59,7 +59,7 @@ interface CharonFlow : Closeable {
         topic: String,
         handler: suspend (message: Any, cancel: () -> Unit) -> Unit
     ): Result<Subscription>
-    
+
     /**
      * 订阅指定主题（类型安全版本）
      *
@@ -73,11 +73,11 @@ interface CharonFlow : Closeable {
         clazz: Class<T>,
         handler: suspend (message: T, cancel: () -> Unit) -> Unit
     ): Result<Subscription>
-    
+
     // endregion
-    
+
     // region 请求-响应模式
-    
+
     /**
      * 发送请求并等待响应
      *
@@ -87,7 +87,7 @@ interface CharonFlow : Closeable {
      * @return 响应结果，成功返回响应数据，失败返回错误信息
      */
     suspend fun <T : Any> request(channel: String, request: Any): Result<T>
-    
+
     /**
      * 注册请求处理器
      *
@@ -99,7 +99,7 @@ interface CharonFlow : Closeable {
         channel: String,
         handler: suspend (request: Any) -> Any
     ): Result<Unit>
-    
+
     /**
      * 注册请求处理器（类型安全版本）
      *
@@ -114,11 +114,11 @@ interface CharonFlow : Closeable {
         requestClass: Class<T>,
         handler: suspend (request: T) -> R
     ): Result<Unit>
-    
+
     // endregion
-    
+
     // region RPC 模式
-    
+
     /**
      * 远程过程调用（单参数）
      *
@@ -129,7 +129,7 @@ interface CharonFlow : Closeable {
      * @return 调用结果，成功返回返回值，失败返回错误信息
      */
     suspend fun <T : Any, R : Any> rpc(method: String, param: T): Result<R>
-    
+
     /**
      * 远程过程调用（多参数）
      *
@@ -139,7 +139,7 @@ interface CharonFlow : Closeable {
      * @return 调用结果，成功返回返回值，失败返回错误信息
      */
     suspend fun <R : Any> rpc(method: String, request: RpcRequest): Result<R>
-    
+
     /**
      * 远程过程调用（可变参数）
      *
@@ -149,7 +149,7 @@ interface CharonFlow : Closeable {
      * @return 调用结果，成功返回返回值，失败返回错误信息
      */
     suspend fun <R : Any> rpc(method: String, vararg params: Any): Result<R>
-    
+
     /**
      * 注册 RPC 方法处理器
      *
@@ -163,11 +163,11 @@ interface CharonFlow : Closeable {
         method: String,
         handler: suspend (param: T) -> R
     ): Result<Unit>
-    
+
     // endregion
-    
+
     // region 流式 RPC 模式
-    
+
     /**
      * 流式远程过程调用
      *
@@ -178,7 +178,7 @@ interface CharonFlow : Closeable {
      * @return 流式响应
      */
     suspend fun <T : Any, R : Any> streamRpc(method: String, param: T): Flow<R>
-    
+
     /**
      * 注册流式 RPC 方法处理器
      *
@@ -192,11 +192,11 @@ interface CharonFlow : Closeable {
         method: String,
         handler: suspend (param: T) -> Flow<R>
     ): Result<Unit>
-    
+
     // endregion
-    
+
     // region 组播和广播模式
-    
+
     /**
      * 加入组播组
      *
@@ -204,7 +204,7 @@ interface CharonFlow : Closeable {
      * @return 加入结果，成功返回 Unit，失败返回错误信息
      */
     suspend fun joinMulticastGroup(group: String): Result<Unit>
-    
+
     /**
      * 离开组播组
      *
@@ -212,7 +212,7 @@ interface CharonFlow : Closeable {
      * @return 离开结果，成功返回 Unit，失败返回错误信息
      */
     suspend fun leaveMulticastGroup(group: String): Result<Unit>
-    
+
     /**
      * 发送组播消息
      *
@@ -221,7 +221,7 @@ interface CharonFlow : Closeable {
      * @return 发送结果，成功返回 Unit，失败返回错误信息
      */
     suspend fun multicast(group: String, message: Any): Result<Unit>
-    
+
     /**
      * 监听组播消息
      *
@@ -233,7 +233,7 @@ interface CharonFlow : Closeable {
         group: String,
         handler: suspend (message: Any, cancel: () -> Unit) -> Unit
     ): Result<Subscription>
-    
+
     /**
      * 发送广播消息
      *
@@ -242,7 +242,7 @@ interface CharonFlow : Closeable {
      * @return 发送结果，成功返回 Unit，失败返回错误信息
      */
     suspend fun broadcast(channel: String, message: Any): Result<Unit>
-    
+
     /**
      * 监听广播消息
      *
@@ -254,30 +254,30 @@ interface CharonFlow : Closeable {
         channel: String,
         handler: suspend (message: Any, cancel: () -> Unit) -> Unit
     ): Result<Subscription>
-    
+
     // endregion
-    
+
     // region 工具方法
-    
+
     /**
      * 健康检查
      *
      * @return 健康状态，true 表示健康，false 表示不健康
      */
     suspend fun healthCheck(): Boolean
-    
+
     /**
      * 获取统计信息
      *
      * @return 当前统计信息
      */
     fun getStats(): Stats
-    
+
     /**
      * 重置统计信息
      */
     fun resetStats()
-    
+
     // endregion
 }
 

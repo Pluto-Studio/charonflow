@@ -26,7 +26,7 @@ data class RetryPolicyConfig(
             maxDelay = 10.seconds
         )
     ),
-    
+
     /**
      * 消息重试配置
      * 控制消息发送失败时的重试行为
@@ -46,13 +46,13 @@ data class RetryConfig(
      * 例如：maxAttempts = 3 表示最多尝试 3 次（1次初始尝试 + 2次重试）
      */
     val maxAttempts: Int = 3,
-    
+
     /**
      * 退避策略
      * 控制重试之间的延迟
      */
     val backoffStrategy: BackoffStrategy = ExponentialBackoffStrategy(),
-    
+
     /**
      * 可重试的异常类型
      * 只有这些异常才会触发重试
@@ -93,7 +93,7 @@ data class FixedBackoffStrategy(
     init {
         require(delay.isPositive()) { "Delay must be positive" }
     }
-    
+
     override fun calculateDelay(attempt: Int): Duration = delay
 }
 
@@ -113,11 +113,11 @@ data class ExponentialBackoffStrategy(
         require(maxDelay.isPositive()) { "Max delay must be positive" }
         require(jitterFactor >= 0.0 && jitterFactor <= 1.0) { "Jitter factor must be between 0.0 and 1.0" }
     }
-    
+
     override fun calculateDelay(attempt: Int): Duration {
         val baseDelay = initialDelay * multiplier.pow(attempt)
         val delay = if (baseDelay > maxDelay) maxDelay else baseDelay
-        
+
         // 添加随机抖动，避免多个客户端同时重试
         val jitter = delay * (1.0 + (Math.random() * 2 - 1) * jitterFactor)
         return if (jitter > maxDelay) maxDelay else jitter
@@ -138,7 +138,7 @@ data class LinearBackoffStrategy(
         require(increment.isPositive()) { "Increment must be positive" }
         require(maxDelay.isPositive()) { "Max delay must be positive" }
     }
-    
+
     override fun calculateDelay(attempt: Int): Duration {
         val delay = initialDelay + increment * attempt
         return if (delay > maxDelay) maxDelay else delay

@@ -12,35 +12,35 @@ sealed class CharonException(
     message: String,
     cause: Throwable? = null
 ) : Exception(message, cause) {
-    
+
     /**
      * 错误码
      */
     abstract val code: String
-    
+
     /**
      * 错误严重程度
      */
     abstract val severity: Severity
-    
+
     /**
      * 是否可重试
      */
     abstract val retryable: Boolean
-    
+
     /**
      * 错误严重程度枚举
      */
     enum class Severity {
         /** 低严重程度，通常不影响正常操作 */
         LOW,
-        
+
         /** 中等严重程度，可能影响部分功能 */
         MEDIUM,
-        
+
         /** 高严重程度，影响核心功能 */
         HIGH,
-        
+
         /** 严重程度，需要立即处理 */
         CRITICAL
     }
@@ -385,7 +385,7 @@ class ResourceLeakException(
  * 异常工具函数
  */
 object ExceptionUtils {
-    
+
     /**
      * 检查异常是否可重试
      */
@@ -400,7 +400,7 @@ object ExceptionUtils {
             else -> false
         }
     }
-    
+
     /**
      * 获取异常的错误码
      */
@@ -415,7 +415,7 @@ object ExceptionUtils {
             else -> "UNKNOWN_ERROR"
         }
     }
-    
+
     /**
      * 获取异常的严重程度
      */
@@ -430,22 +430,22 @@ object ExceptionUtils {
             else -> CharonException.Severity.MEDIUM
         }
     }
-    
+
     /**
      * 创建详细的异常信息
      */
     fun createDetailedMessage(exception: Throwable, context: Map<String, Any> = emptyMap()): String {
         val sb = StringBuilder()
-        
+
         // 基本异常信息
         sb.append("Exception: ${exception.javaClass.simpleName}\n")
         sb.append("Message: ${exception.message ?: "No message"}\n")
-        
+
         // 错误码和严重程度
         sb.append("Error Code: ${getErrorCode(exception)}\n")
         sb.append("Severity: ${getSeverity(exception)}\n")
         sb.append("Retryable: ${isRetryable(exception)}\n")
-        
+
         // 上下文信息
         if (context.isNotEmpty()) {
             sb.append("Context:\n")
@@ -453,7 +453,7 @@ object ExceptionUtils {
                 sb.append("  $key: $value\n")
             }
         }
-        
+
         // 堆栈跟踪（仅前5行）
         val stackTrace = exception.stackTrace.take(5)
         if (stackTrace.isNotEmpty()) {
@@ -462,7 +462,7 @@ object ExceptionUtils {
                 sb.append("  at ${element.className}.${element.methodName}(${element.fileName}:${element.lineNumber})\n")
             }
         }
-        
+
         return sb.toString()
     }
 }

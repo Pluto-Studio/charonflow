@@ -1,10 +1,6 @@
 package club.plutoproject.charonflow.extensions
 
-import club.plutoproject.charonflow.core.exceptions.CharonException
-import club.plutoproject.charonflow.core.exceptions.ConnectionException
-import club.plutoproject.charonflow.core.exceptions.OperationException
-import club.plutoproject.charonflow.core.exceptions.RpcException
-import club.plutoproject.charonflow.core.exceptions.SerializationException
+import club.plutoproject.charonflow.core.exceptions.*
 import io.lettuce.core.RedisCommandTimeoutException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -239,22 +235,26 @@ fun <T> Result<T>.isRetryable(): Boolean {
 suspend fun <T> withRetry(
     maxAttempts: Int = 3,
     retryDelay: Duration? = null,
-    retryCondition: (Throwable) -> Boolean = { club.plutoproject.charonflow.core.exceptions.ExceptionUtils.isRetryable(it) },
+    retryCondition: (Throwable) -> Boolean = {
+        club.plutoproject.charonflow.core.exceptions.ExceptionUtils.isRetryable(
+            it
+        )
+    },
     block: suspend (attempt: Int) -> T
 ): Result<T> {
     require(maxAttempts >= 1) { "maxAttempts must be >= 1" }
-    
+
     var lastException: Throwable? = null
-    
+
     for (attempt in 1..maxAttempts) {
         val result = runCatching { block(attempt) }
-        
+
         if (result.isSuccess) {
             return result
         }
-        
+
         lastException = result.exceptionOrNull()!!
-        
+
         // 检查是否应该重试
         if (attempt < maxAttempts && retryCondition(lastException)) {
             // 等待重试延迟
@@ -263,10 +263,10 @@ suspend fun <T> withRetry(
             }
             continue
         }
-        
+
         break
     }
-    
+
     return Result.failure(lastException!!)
 }
 
@@ -285,42 +285,46 @@ suspend fun <T> withExponentialBackoff(
     initialDelay: Duration,
     maxDelay: Duration,
     multiplier: Double = 2.0,
-    retryCondition: (Throwable) -> Boolean = { club.plutoproject.charonflow.core.exceptions.ExceptionUtils.isRetryable(it) },
+    retryCondition: (Throwable) -> Boolean = {
+        club.plutoproject.charonflow.core.exceptions.ExceptionUtils.isRetryable(
+            it
+        )
+    },
     block: suspend (attempt: Int) -> T
 ): Result<T> {
     require(maxAttempts >= 1) { "maxAttempts must be >= 1" }
     require(initialDelay.isPositive()) { "initialDelay must be positive" }
     require(maxDelay.isPositive()) { "maxDelay must be positive" }
     require(multiplier > 1.0) { "multiplier must be > 1.0" }
-    
+
     var lastException: Throwable? = null
     var currentDelay = initialDelay
-    
+
     for (attempt in 1..maxAttempts) {
         val result = runCatching { block(attempt) }
-        
+
         if (result.isSuccess) {
             return result
         }
-        
+
         lastException = result.exceptionOrNull()!!
-        
+
         // 检查是否应该重试
         if (attempt < maxAttempts && retryCondition(lastException)) {
             // 等待当前延迟
             kotlinx.coroutines.delay(currentDelay)
-            
+
             // 计算下一次延迟
             currentDelay = (currentDelay * multiplier).let { delay ->
                 if (delay > maxDelay) maxDelay else delay
             }
-            
+
             continue
         }
-        
+
         break
     }
-    
+
     return Result.failure(lastException!!)
 }
 
@@ -373,14 +377,14 @@ fun <T1, T2, T3, R> combine(
 fun <T> Collection<Result<T>>.partitionResults(): Pair<List<T>, List<Throwable>> {
     val successes = mutableListOf<T>()
     val failures = mutableListOf<Throwable>()
-    
+
     forEach { result ->
         result.fold(
             onSuccess = { successes.add(it) },
             onFailure = { failures.add(it) }
         )
     }
-    
+
     return successes to failures
 }
 

@@ -14,12 +14,12 @@ data class RpcRequest(
      * 序列化后的参数数据
      */
     val serializedData: ByteArray = ByteArray(0),
-    
+
     /**
      * 参数类型信息（用于反序列化）
      */
     val paramTypes: List<String> = emptyList(),
-    
+
     /**
      * 请求元数据
      */
@@ -30,22 +30,22 @@ data class RpcRequest(
             "If serializedData is empty, paramTypes must also be empty"
         }
     }
-    
+
     /**
      * 参数数量
      */
     val size: Int get() = paramTypes.size
-    
+
     /**
      * 是否为空请求
      */
     val isEmpty: Boolean get() = serializedData.isEmpty()
-    
+
     /**
      * 是否为单参数请求
      */
     val isSingleParam: Boolean get() = paramTypes.size == 1
-    
+
     /**
      * 获取元数据值
      *
@@ -53,7 +53,7 @@ data class RpcRequest(
      * @return 元数据值，如果不存在返回 null
      */
     fun getMetadata(key: String): String? = metadata[key]
-    
+
     /**
      * 检查是否包含指定元数据
      *
@@ -61,7 +61,7 @@ data class RpcRequest(
      * @return 如果包含返回 true
      */
     fun hasMetadata(key: String): Boolean = metadata.containsKey(key)
-    
+
     /**
      * 添加元数据
      *
@@ -74,7 +74,7 @@ data class RpcRequest(
         newMetadata[key] = value
         return copy(metadata = newMetadata)
     }
-    
+
     /**
      * 移除元数据
      *
@@ -86,33 +86,33 @@ data class RpcRequest(
         newMetadata.remove(key)
         return copy(metadata = newMetadata)
     }
-    
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
-        
+
         other as RpcRequest
-        
+
         if (!serializedData.contentEquals(other.serializedData)) return false
         if (paramTypes != other.paramTypes) return false
         if (metadata != other.metadata) return false
-        
+
         return true
     }
-    
+
     override fun hashCode(): Int {
         var result = serializedData.contentHashCode()
         result = 31 * result + paramTypes.hashCode()
         result = 31 * result + metadata.hashCode()
         return result
     }
-    
+
     companion object {
         /**
          * 创建空请求
          */
         fun empty(): RpcRequest = RpcRequest()
-        
+
         /**
          * 创建单参数请求
          *
@@ -125,7 +125,7 @@ data class RpcRequest(
                 paramTypes = listOf(paramType)
             )
         }
-        
+
         /**
          * 创建多参数请求
          *
@@ -150,23 +150,23 @@ data class RpcResponse<T>(
      * 如果调用成功，包含返回值；如果调用失败，为 null
      */
     val result: T? = null,
-    
+
     /**
      * 错误信息
      * 如果调用失败，包含错误信息；如果调用成功，为 null
      */
     val error: String? = null,
-    
+
     /**
      * 调用是否成功
      */
     val success: Boolean = error == null,
-    
+
     /**
      * 调用耗时（毫秒）
      */
     val duration: Long = 0,
-    
+
     /**
      * 响应元数据
      */
@@ -180,7 +180,7 @@ data class RpcResponse<T>(
             "Duration must be non-negative"
         }
     }
-    
+
     /**
      * 获取结果或抛出异常
      *
@@ -193,7 +193,7 @@ data class RpcResponse<T>(
             throw IllegalStateException(error ?: "RPC call failed")
         }
     }
-    
+
     /**
      * 获取结果或返回默认值
      *
@@ -202,12 +202,12 @@ data class RpcResponse<T>(
     fun getOrDefault(defaultValue: T): T {
         return if (success && result != null) result else defaultValue
     }
-    
+
     /**
      * 获取结果或 null
      */
     fun getOrNull(): T? = if (success) result else null
-    
+
     /**
      * 转换结果类型
      *
@@ -228,7 +228,7 @@ data class RpcResponse<T>(
             )
         }
     }
-    
+
     companion object {
         /**
          * 创建成功响应
@@ -236,14 +236,14 @@ data class RpcResponse<T>(
         fun <T> success(result: T, duration: Long = 0, metadata: Map<String, String> = emptyMap()): RpcResponse<T> {
             return RpcResponse(result = result, duration = duration, metadata = metadata)
         }
-        
+
         /**
          * 创建失败响应
          */
         fun <T> error(error: String, duration: Long = 0, metadata: Map<String, String> = emptyMap()): RpcResponse<T> {
             return RpcResponse(error = error, duration = duration, metadata = metadata)
         }
-        
+
         /**
          * 从 Result 创建响应
          */
