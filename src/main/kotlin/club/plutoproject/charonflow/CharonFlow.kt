@@ -4,6 +4,7 @@ import club.plutoproject.charonflow.config.Config
 import club.plutoproject.charonflow.core.RpcRequest
 import club.plutoproject.charonflow.core.Subscription
 import kotlinx.coroutines.flow.Flow
+import kotlin.reflect.KClass
 import java.io.Closeable
 
 /**
@@ -49,15 +50,15 @@ interface CharonFlow : Closeable {
     suspend fun publish(topic: String, message: Any): Result<Unit>
 
     /**
-     * 订阅指定主题
+     * 订阅指定主题（接收所有类型）
      *
      * @param topic 主题名称
-     * @param handler 消息处理函数，接收消息和取消函数
+     * @param handler 消息处理函数，接收反序列化后的消息对象
      * @return 订阅结果，成功返回 Subscription，失败返回错误信息
      */
-    suspend fun subscribe(
+    fun subscribe(
         topic: String,
-        handler: suspend (message: Any, cancel: () -> Unit) -> Unit
+        handler: suspend (message: Any) -> Unit
     ): Result<Subscription>
 
     /**
@@ -65,13 +66,13 @@ interface CharonFlow : Closeable {
      *
      * @param T 消息类型
      * @param topic 主题名称
-     * @param handler 消息处理函数，接收类型安全的消息和取消函数
+     * @param handler 消息处理函数，接收类型安全的消息对象
      * @return 订阅结果，成功返回 Subscription，失败返回错误信息
      */
-    suspend fun <T : Any> subscribe(
+    fun <T : Any> subscribe(
         topic: String,
-        clazz: Class<T>,
-        handler: suspend (message: T, cancel: () -> Unit) -> Unit
+        clazz: KClass<T>,
+        handler: suspend (message: T) -> Unit
     ): Result<Subscription>
 
     // endregion

@@ -698,10 +698,10 @@ sealed class SerializationException(message: String, cause: Throwable? = null) :
 
 #### 阶段5：API接口重构（Pub/Sub相关）
 
-- [ ] CharonFlow.subscribe改为非suspend，handler接收反序列化对象
-- [ ] 添加Any::class特殊处理逻辑
-- [ ] Subscription调整updateHandler等方法签名
-- [ ] Subscription实现pause状态忽略消息逻辑
+- [x] CharonFlow.subscribe改为非suspend，handler接收反序列化对象
+- [x] 添加Any::class特殊处理逻辑
+- [x] Subscription调整updateHandler等方法签名
+- [x] Subscription实现pause状态忽略消息逻辑
 
 #### 阶段6：异常和错误处理
 

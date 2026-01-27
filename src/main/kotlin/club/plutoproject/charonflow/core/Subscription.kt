@@ -71,7 +71,7 @@ interface Subscription {
     /**
      * 暂停订阅
      *
-     * 暂停接收消息，但保持订阅状态。
+     * 暂停接收消息，但保持订阅状态。暂停状态下会忽略所有消息，不进行缓冲。
      *
      * @return 暂停结果，成功返回 Unit，失败返回错误信息
      */
@@ -97,7 +97,7 @@ interface Subscription {
      * @param handler 新的消息处理函数
      * @return 更新结果，成功返回 Unit，失败返回错误信息
      */
-    suspend fun updateHandler(handler: suspend (message: Any, cancel: () -> Unit) -> Unit): Result<Unit>
+    suspend fun updateHandler(handler: suspend (message: Any) -> Unit): Result<Unit>
 
     // endregion
 
