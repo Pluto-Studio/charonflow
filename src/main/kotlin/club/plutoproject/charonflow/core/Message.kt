@@ -8,11 +8,21 @@ import java.util.UUID
  *
  * 所有通过 CharonFlow 传输的消息都包装在此类中。
  * 包含消息元数据和实际内容。
- *
- * @param T 消息体类型
  */
 @Serializable
-data class Message<T>(
+data class Message(
+    /**
+     * 消息负载
+     * 用户数据的序列化结果（ByteArray）
+     */
+    val payload: ByteArray,
+    
+    /**
+     * 负载类型
+     * 类型的完全限定名（FQN），必需
+     */
+    val payloadType: String,
+    
     /**
      * 消息 ID
      * 用于消息追踪和去重
@@ -25,11 +35,7 @@ data class Message<T>(
      */
     val timestamp: Long = System.currentTimeMillis(),
     
-    /**
-     * 消息体
-     * 实际的消息内容
-     */
-    val body: T,
+
     
     /**
      * 消息头
@@ -37,11 +43,7 @@ data class Message<T>(
      */
     val headers: Map<String, String> = emptyMap(),
     
-    /**
-     * 消息类型
-     * 用于反序列化时确定具体的消息体类型
-     */
-    val type: String? = null,
+
     
     /**
      * 消息来源
@@ -80,6 +82,7 @@ data class Message<T>(
     val replyTo: String? = null
 ) {
     init {
+        require(payloadType.isNotBlank()) { "payloadType must not be blank" }
         require(priority in 0..9) { "Priority must be between 0 and 9" }
         require(ttl >= 0) { "TTL must be non-negative" }
     }
@@ -112,7 +115,7 @@ data class Message<T>(
      * @param value 头值
      * @return 新的 Message 实例
      */
-    fun withHeader(key: String, value: String): Message<T> {
+    fun withHeader(key: String, value: String): Message {
         val newHeaders = headers.toMutableMap()
         newHeaders[key] = value
         return copy(headers = newHeaders)
@@ -124,7 +127,7 @@ data class Message<T>(
      * @param newHeaders 要添加的消息头
      * @return 新的 Message 实例
      */
-    fun withHeaders(newHeaders: Map<String, String>): Message<T> {
+    fun withHeaders(newHeaders: Map<String, String>): Message {
         val mergedHeaders = headers.toMutableMap()
         mergedHeaders.putAll(newHeaders)
         return copy(headers = mergedHeaders)
@@ -136,7 +139,7 @@ data class Message<T>(
      * @param key 要移除的头键
      * @return 新的 Message 实例
      */
-    fun withoutHeader(key: String): Message<T> {
+    fun withoutHeader(key: String): Message {
         val newHeaders = headers.toMutableMap()
         newHeaders.remove(key)
         return copy(headers = newHeaders)
@@ -164,7 +167,7 @@ data class Message<T>(
      * @param source 消息来源
      * @return 新的 Message 实例
      */
-    fun withSource(source: String): Message<T> = copy(source = source)
+    fun withSource(source: String): Message = copy(source = source)
     
     /**
      * 设置消息目标
@@ -172,7 +175,7 @@ data class Message<T>(
      * @param target 消息目标
      * @return 新的 Message 实例
      */
-    fun withTarget(target: String): Message<T> = copy(target = target)
+    fun withTarget(target: String): Message = copy(target = target)
     
     /**
      * 设置关联 ID
@@ -180,7 +183,7 @@ data class Message<T>(
      * @param correlationId 关联 ID
      * @return 新的 Message 实例
      */
-    fun withCorrelationId(correlationId: String): Message<T> = copy(correlationId = correlationId)
+    fun withCorrelationId(correlationId: String): Message = copy(correlationId = correlationId)
     
     /**
      * 设置回复地址
@@ -188,7 +191,7 @@ data class Message<T>(
      * @param replyTo 回复地址
      * @return 新的 Message 实例
      */
-    fun withReplyTo(replyTo: String): Message<T> = copy(replyTo = replyTo)
+    fun withReplyTo(replyTo: String): Message = copy(replyTo = replyTo)
     
     /**
      * 设置消息优先级
@@ -196,7 +199,7 @@ data class Message<T>(
      * @param priority 优先级（0-9）
      * @return 新的 Message 实例
      */
-    fun withPriority(priority: Int): Message<T> = copy(priority = priority)
+    fun withPriority(priority: Int): Message = copy(priority = priority)
     
     /**
      * 设置消息过期时间
@@ -204,49 +207,7 @@ data class Message<T>(
      * @param ttl 过期时间（毫秒）
      * @return 新的 Message 实例
      */
-    fun withTtl(ttl: Long): Message<T> = copy(ttl = ttl)
+    fun withTtl(ttl: Long): Message = copy(ttl = ttl)
     
-    companion object {
-        /**
-         * 创建请求消息
-         *
-         * @param body 消息体
-         * @param replyTo 回复地址
-         * @param correlationId 关联 ID（可选，自动生成）
-         */
-        fun <T> request(body: T, replyTo: String, correlationId: String? = null): Message<T> {
-            return Message(
-                body = body,
-                replyTo = replyTo,
-                correlationId = correlationId ?: UUID.randomUUID().toString()
-            )
-        }
-        
-        /**
-         * 创建响应消息
-         *
-         * @param body 消息体
-         * @param correlationId 关联 ID（必须与请求消息的 correlationId 匹配）
-         */
-        fun <T> response(body: T, correlationId: String): Message<T> {
-            return Message(
-                body = body,
-                correlationId = correlationId
-            )
-        }
-        
-        /**
-         * 创建错误消息
-         *
-         * @param error 错误信息
-         * @param correlationId 关联 ID（必须与请求消息的 correlationId 匹配）
-         */
-        fun error(error: String, correlationId: String): Message<String> {
-            return Message(
-                body = error,
-                correlationId = correlationId,
-                headers = mapOf("error" to "true")
-            )
-        }
-    }
+
 }

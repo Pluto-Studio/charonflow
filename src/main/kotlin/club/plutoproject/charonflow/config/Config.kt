@@ -2,6 +2,8 @@ package club.plutoproject.charonflow.config
 
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import java.util.UUID
+import kotlinx.serialization.modules.SerializersModule
 
 /**
  * CharonFlow 主配置类
@@ -17,10 +19,16 @@ data class Config(
     val redisUri: String,
     
     /**
-     * 序列化器配置
-     * 默认使用 CBOR 序列化器
+     * 序列化配置
+     * 固定使用 CBOR 格式
      */
-    val serializerConfig: SerializerConfig = SerializerConfig(),
+    val serializationConfig: SerializationConfig = SerializationConfig(),
+    
+    /**
+     * 序列化器模块
+     * 用于注册自定义序列化器和多态类型
+     */
+    val serializersModule: SerializersModule = SerializersModule {},
     
     /**
      * 连接池配置
@@ -33,6 +41,12 @@ data class Config(
      * 控制连接和消息发送的重试行为
      */
     val retryPolicyConfig: RetryPolicyConfig = RetryPolicyConfig(),
+    
+    /**
+     * 客户端标识
+     * 用于点对点通信，默认自动生成 UUID
+     */
+    val clientId: String = UUID.randomUUID().toString(),
     
     /**
      * 操作超时时间
