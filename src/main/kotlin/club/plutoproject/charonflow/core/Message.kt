@@ -12,6 +12,12 @@ import java.util.*
 @Serializable
 data class Message(
     /**
+     * 消息主题
+     * 用于 Pub/Sub 模式，标识消息所属的频道/主题
+     */
+    val topic: String,
+
+    /**
      * 消息负载
      * 用户数据的序列化结果（ByteArray）
      */
@@ -80,6 +86,7 @@ data class Message(
     val replyTo: String? = null
 ) {
     init {
+        require(topic.isNotBlank()) { "topic must not be blank" }
         require(payloadType.isNotBlank()) { "payloadType must not be blank" }
         require(priority in 0..9) { "Priority must be between 0 and 9" }
         require(ttl >= 0) { "TTL must be non-negative" }
@@ -190,6 +197,14 @@ data class Message(
      * @return 新的 Message 实例
      */
     fun withReplyTo(replyTo: String): Message = copy(replyTo = replyTo)
+
+    /**
+     * 设置消息主题
+     *
+     * @param topic 消息主题
+     * @return 新的 Message 实例
+     */
+    fun withTopic(topic: String): Message = copy(topic = topic)
 
     /**
      * 设置消息优先级

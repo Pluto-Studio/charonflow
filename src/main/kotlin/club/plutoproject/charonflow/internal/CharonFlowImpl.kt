@@ -1,13 +1,27 @@
-package club.plutoproject.charonflow.core
+package club.plutoproject.charonflow.internal
 
+import club.plutoproject.charonflow.CharonFlow
 import club.plutoproject.charonflow.ConnectionInfo
 import club.plutoproject.charonflow.Stats
 import club.plutoproject.charonflow.config.Config
-import club.plutoproject.charonflow.core.exceptions.SubscriptionNotFoundException
+import club.plutoproject.charonflow.core.Message
+import club.plutoproject.charonflow.core.PubSubManager
+import club.plutoproject.charonflow.core.PubSubSubscription
+import club.plutoproject.charonflow.core.RpcRequest
+import club.plutoproject.charonflow.core.Subscription
+import club.plutoproject.charonflow.core.exceptions.SerializeFailedException
+import club.plutoproject.charonflow.core.exceptions.TypeNotRegisteredException
 import club.plutoproject.charonflow.internal.serialization.SerializationManager
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import org.slf4j.LoggerFactory
+import java.util.UUID
 import kotlin.reflect.KClass
+
+private val logger = LoggerFactory.getLogger(CharonFlowImpl::class.java)
 
 /**
  * CharonFlow 公共实现类
@@ -16,22 +30,22 @@ import kotlin.reflect.KClass
  */
 internal class CharonFlowImpl(
     override val config: Config
-) : club.plutoproject.charonflow.CharonFlow {
+) : CharonFlow {
 
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val serializationManager = SerializationManager(config.serializersModule)
     private val pubSubManager = PubSubManager()
-    
+
     // region 状态管理
-    
+
     override val isConnected: Boolean
         get() = TODO("实际实现连接状态检查")
-    
+
     override val connectionInfo: ConnectionInfo
         get() = TODO("实际实现连接信息获取")
-    
+
     // endregion
-    
+
     // region Pub/Sub 模式
 
     override fun subscribe(
@@ -59,59 +73,52 @@ internal class CharonFlowImpl(
     ): Result<Subscription> {
         if (clazz != Any::class && !serializationManager.isSerializable(clazz)) {
             return Result.failure(
-                SubscriptionNotFoundException(
-                    "Type '${clazz.qualifiedName}' is not serializable",
-                    subscriptionId = null,
-                    topic = topic
+                TypeNotRegisteredException(
+                    message = "Type '${clazz.qualifiedName}' is not serializable",
+                    typeName = clazz.qualifiedName
                 )
             )
         }
 
         val subscription = PubSubSubscription(
-            id = java.util.UUID.randomUUID().toString(),
-            topic = topic
+            id = UUID.randomUUID().toString(),
+            topic = topic,
+            handler = { msg ->
+                @Suppress("UNCHECKED_CAST")
+                handler(msg as T)
+            }
         )
-        
+
         pubSubManager.addSubscription(subscription)
         return Result.success(subscription)
-    }
-
-    /**
-     * 处理接收到的消息
-     */
-    private suspend fun <T : Any> handleMessage(
-        message: Any,
-        clazz: KClass<T>,
-        handler: suspend (message: T) -> Unit
-    ) {
-        if (clazz == Any::class) {
-            handler(message as T)
-        } else {
-            try {
-                handler(message as T)
-            } catch (e: Exception) {
-                println("Error processing message: ${e.message}")
-            }
-        }
     }
 
     override suspend fun publish(topic: String, message: Any): Result<Unit> {
         return try {
             val bytes = serializationManager.serialize(message)
-            val messageWithPayload = PubSubMessage(
+            val messageToSend = Message(
                 topic = topic,
-                message = String(bytes),
-                publisher = config.clientId
+                payload = bytes,
+                payloadType = message::class.qualifiedName ?: throw SerializeFailedException(
+                    message = "Cannot determine type for message",
+                    targetType = null
+                ),
+                source = config.clientId
             )
-            
+
+            logger.debug("Publishing message to topic {}: type={}, size={}", topic, messageToSend.payloadType, bytes.size)
             TODO("实际实现发布逻辑")
+        } catch (e: SerializeFailedException) {
+            logger.error("Failed to serialize message for topic {}: {}", topic, e.message, e)
+            Result.failure(e)
         } catch (e: Exception) {
+            logger.error("Error publishing message to topic {}: {}", topic, e.message, e)
             Result.failure(e)
         }
     }
 
     // endregion
-    
+
     // region 其他模式（MVP 暂不实现）
 
     override suspend fun <T : Any> request(channel: String, request: Any): Result<T> =

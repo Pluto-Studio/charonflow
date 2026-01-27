@@ -1,6 +1,9 @@
 package club.plutoproject.charonflow.core
 
 import club.plutoproject.charonflow.core.exceptions.SubscriptionNotFoundException
+import org.slf4j.LoggerFactory
+
+private val logger = LoggerFactory.getLogger(PubSubSubscription::class.java)
 
 /**
  * PubSub 实现的订阅接口
@@ -22,7 +25,11 @@ internal class PubSubSubscription(
         averageProcessingTime = 0.0,
         isActive = true,
         isPaused = false
-    )
+    ),
+    /**
+     * 消息处理函数
+     */
+    private val handler: suspend (message: Any) -> Unit
 ) : Subscription {
 
     private var _lastActivityTime: Long = lastActivityTime
@@ -62,9 +69,10 @@ internal class PubSubSubscription(
     }
 
     override suspend fun updateHandler(handler: suspend (message: Any) -> Unit): Result<Unit> {
-        // TODO: 实现更新逻辑
+        // TODO: 实现更新逻辑（需要将 handler 存储为成员变量）
         updateLastActivityTime()
-        return Result.success(Unit)
+        logger.warn("updateHandler is not yet implemented")
+        return Result.failure(UnsupportedOperationException("updateHandler is not yet implemented"))
     }
 
     // endregion
@@ -129,18 +137,24 @@ internal class PubSubSubscription(
 
     /**
      * 处理接收到的消息
-     * 
+     *
      * @param message 消息内容
      * @return 处理结果，true 表示成功处理，false 表示消息被忽略（如暂停状态）
      */
-    internal fun handleReceivedMessage(message: Any): Boolean {
+    internal suspend fun handleReceivedMessage(message: Any): Boolean {
         if (!canProcessMessages()) {
             return false
         }
 
         updateLastActivityTime()
-        // TODO: 调用实际的 handler
-        return true
+        try {
+            handler(message)
+            incrementMessageCount()
+            return true
+        } catch (e: Exception) {
+            logger.error("Error in subscription {} handler: {}", id, e.message, e)
+            return false
+        }
     }
 
     /**

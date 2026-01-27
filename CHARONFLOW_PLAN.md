@@ -133,28 +133,29 @@ val charon = CharonFlow.create(config)
 // 订阅者（类型安全版本）
 val subscription = charon.subscribe(
     topic = "user-events",
-    kclass = UserCreated::class  // 只接收UserCreated类型的消息
+    clazz = UserCreated::class  // 只接收UserCreated类型的消息（✓ 已实现）
 ) { event: UserCreated ->
     println("Received user event: $event")
-    // event 已经是反序列化后的UserCreated对象
+    // event 已经是反序列化后的UserCreated对象（✓ 已实现）
 }
 
 // 发布者（自动序列化）
-charon.publish("user-events", UserCreated("user123", "Alice"))
+charon.publish("user-events", UserCreated("user123", "Alice"))  // （✓ 已实现）
 
 // 订阅Any类型（接收所有类型）
 val anySubscription = charon.subscribe(
-    topic = "all-events",
-    kclass = Any::class  // 接收所有类型的消息
-) { obj: Any ->
+    topic = "all-events"
+) { obj: Any ->  // （✓ 已实现：handler接收反序列化对象）
     println("Received: $obj")
-    // obj是Any，内部按实际类型反序列化后cast
+    // obj是Any，内部按实际类型反序列化后cast（✓ 已实现）
 }
 
 // 稍后取消订阅
-subscription.unsubscribe()
+subscription.unsubscribe()  // （✓ 已实现）
 anySubscription.unsubscribe()
 ```
+
+**实现状态**：✓ 已实现（阶段5）- API完全匹配当前设计，handler接收反序列化对象
 
 ### Demo 2: 请求-响应模式（点对点）
 
@@ -193,7 +194,7 @@ val channels = charon.getRegisteredChannels()  // Set<String>
 charon.registerRpc(
     method = "calculate-sum",
     requestClass = Int::class
-) { n: Int ->
+) { n: Int ->  // （○ Post-MVP：签名需改为非suspend）
     // 单参数RPC
     (1..n).sum()
 }
@@ -201,9 +202,9 @@ charon.registerRpc(
 // 多参数RPC
 charon.registerRpc(
     method = "add",
-    requestClass = RpcRequest::class  // RpcRequest作为请求类型
+    requestClass = RpcRequest::class  // RpcRequest作为请求类型（○ Post-MVP：待重构）
 ) { request: RpcRequest ->
-    val params = request.deserializeParams<Int>()  // 反序列化参数列表
+    val params = request.deserializeParams<Int>()  // 反序列化参数列表（○ Post-MVP：待实现）
     params.sum()
 }
 
@@ -211,8 +212,17 @@ charon.registerRpc(
 val result: Result<Int> = charon.rpc("calculate-sum", 42)
 
 // 多参数调用
-val sum: Result<Int> = charon.rpc("add", RpcRequest(listOf(10, 20, 30)))
+val sum: Result<Int> = charon.rpc("add", RpcRequest(listOf(10, 20, 30))))
 ```
+
+**实现状态**：✗ 未实现（Post-MVP）
+- ○ API接口存在但返回NotImplementedException
+- ○ registerRpc签名需改为非suspend（阶段8）
+- ○ RpcRequest待重构为List<ByteArray>（阶段8）
+- ○ getRegisteredRpcMethods()方法待实现（阶段8）
+- ○ RPC核心逻辑待实现（阶段10）
+
+**注意**：此Demo为Post-MVP功能，将在阶段8-10实现。
 
 ### Demo 4: Subscription 管理
 
@@ -220,31 +230,33 @@ val sum: Result<Int> = charon.rpc("add", RpcRequest(listOf(10, 20, 30)))
 // 订阅
 val subscription = charon.subscribe(
     topic = "events",
-    kclass = MyEvent::class
-) { event: MyEvent ->
+    clazz = MyEvent::class  // （✓ 已实现）
+) { event: MyEvent ->  // （✓ 已实现：非suspend handler）
     println("Received: $event")
 
     // 暂停/恢复
     if (event.shouldPause) {
-        subscription.pause()
+        subscription.pause()  // （✓ 已实现：暂停状态忽略消息）
     }
     if (event.shouldResume) {
-        subscription.resume()
+        subscription.resume()  // （✓ 已实现：恢复接收消息）
     }
 
     // 内部取消
     if (event.isTerminal) {
-        subscription.unsubscribe()
+        subscription.unsubscribe()  // （✓ 已实现）
     }
 }
 
 // pause状态下消息被忽略，不缓冲
-subscription.pause()
-// 此时发布的消息会被丢弃
+subscription.pause()  // （✓ 已实现）
+// 此时发布的消息会被丢弃（✓ 已实现）
 
-subscription.resume()
-// 恢复后从当下开始收取新消息
+subscription.resume()  // （✓ 已实现）
+// 恢复后从当下开始收取新消息（✓ 已实现）
 ```
+
+**实现状态**：✓ 已实现（阶段5）- pause/resume逻辑完整，pause状态忽略消息不缓冲
 
 ### Demo 5: SerializersModule 配置
 
@@ -258,95 +270,113 @@ val module = SerializersModule {
     }
     // 自定义序列化器
     serializer<MyCustomType>(MyCustomSerializer())
-    // 覆盖默认序列化
+    // 覆盖默认序列化器
     contextual(UUID::class, UuidSerializer())
 }
 
 // 配置CharonFlow
 val config = Config(
     redisUri = "redis://localhost:6379",
-    serializersModule = module,
-    clientId = "my-client-1"  // 自定义客户端ID
+    serializersModule = module,  // （✓ 已实现：Config.serializersModule）
+    clientId = "my-client-1"  // 自定义客户端ID（✓ 已实现）
 )
 
-val charon = CharonFlow.create(config)
+val charon = CharonFlow.create(config)  // （✓ 已实现）
 
 // 获取客户端ID
-val myClientId = charon.getClientId()
+val myClientId = charon.getClientId()  // （○ 未实现：暂未提供）
 ```
+
+**实现状态**：部分实现（阶段3）
+- ✓ Config.serializersModule 字段已实现
+- ✓ Config.clientId 字段已实现
+- ✓ CharonFlow.create(config) 已实现
+- ○ charon.getClientId() 方法尚未实现（计划在阶段8）
 
 ### Demo 6: 错误处理策略
 
 ```kotlin
 // 类型不匹配：静默忽略（DEBUG日志）
-charon.subscribe(topic, String::class) { msg: String ->
+charon.subscribe(topic, String::class) { msg: String ->  // （✓ 已实现）
     println(msg)
 }
-// 发布Int类型消息 → 被静默忽略，无任何错误
+// 发布Int类型消息 → 被静默忽略，无任何错误（○ 未完全实现：阶段6待完成）
 
 // 序列化失败：记录警告，继续处理
 charon.publish(topic, BrokenObject())  // 无法序列化
-// 日志输出：WARN - Failed to serialize type: ...
+// 日志输出：WARN - Failed to serialize type: ...（✓ 已实现）
 
 // handler异常：终止订阅，记录错误
 charon.subscribe(topic, MyEvent::class) { event: MyEvent ->
     throw RuntimeException("Handler error")
 }
-// 日志输出：ERROR - Handler threw exception, subscription cancelled
-// subscription.isActive = false
+// 日志输出：ERROR - Handler threw exception, subscription cancelled（○ 未完全实现：阶段6待完成）
+// subscription.isActive = false（○ 未完全实现：阶段6待完成）
 ```
+
+**实现状态**：部分实现
+- ✓ 序列化失败日志记录已实现（阶段4）
+- ✓ PubSubSubscription.handleReceivedMessage异常捕获已实现（阶段5）
+- ○ 类型不匹配静默忽略逻辑待实现（阶段6）
+- ○ handler异常终止订阅逻辑待完善（阶段6）
+
+**注意**：此Demo的部分行为将在阶段6完成后生效
 
 ## 文件结构规划（修订版）
 
 ```
 src/main/kotlin/club/plutoproject/charonflow/
 ├── CharonFlow.kt                  # 主入口类（接口定义）
+├── CharonFlowFactory.kt           # 工厂类（✓ 已实现）
 ├── builder/
-│   └── CharonFlowBuilder.kt      # DSL构建器
+│   └── CharonFlowBuilder.kt      # DSL构建器（○ 未实现）
 ├── config/
-│   ├── Config.kt                 # 主配置类（添加clientId、serializersModule）
-│   ├── ConnectionPoolConfig.kt   # 连接池配置（MAX_CONNECTION_THREADS=6）
-│   ├── RetryPolicyConfig.kt      # 重试策略配置
-│   └── SerializationConfig.kt    # 序列化配置（移除format枚举）
+│   ├── Config.kt                 # 主配置类（✓ 已实现：添加clientId、serializersModule）
+│   ├── ConnectionPoolConfig.kt   # 连接池配置（✓ 已实现：MAX_CONNECTION_THREADS=6）
+│   ├── RetryPolicyConfig.kt      # 重试策略配置（✓ 已实现）
+│   └── SerializationConfig.kt    # 序列化配置（✓ 已实现：移除format枚举）
 ├── core/
-│   ├── Message.kt                # 消息抽象（移除泛型，使用ByteArray）
-│   ├── RpcRequest.kt             # RPC请求包装（使用List<ByteArray>）
-│   ├── Subscription.kt           # 订阅接口（保持功能，调整方法签名）
+│   ├── Message.kt                # 消息抽象（✓ 已实现：移除泛型，使用ByteArray，添加topic字段）
+│   ├── RpcRequest.kt             # RPC请求包装（✓ 已实现）
+│   ├── Subscription.kt           # 订阅接口（✓ 已实现：调整方法签名）
+│   ├── PubSubSubscription.kt     # Pub/Sub订阅实现（✓ 已实现：内部类）
+│   ├── PubSubManager.kt          # Pub/Sub管理器（✓ 已实现：内部类）
 │   └── exceptions/
-│       ├── CharonException.kt    # 基础异常
+│       ├── CharonException.kt    # 基础异常（✓ 已实现）
 │       ├── ConnectionException.kt
 │       ├── OperationException.kt
 │       ├── SerializationException.kt
-│       └── AlreadyRegisteredException.kt  # 新增
+│       └── AlreadyRegisteredException.kt  # （○ 未实现）
 ├── internal/
 │   ├── serialization/
-│   │   ├── SerializationManager.kt  # 核心序列化管理（新增）
-│   │   ├── TypeResolver.kt          # 类型解析（新增）
-│   │   └── SerializerCache.kt       # 序列化器缓存（新增）
+│   │   ├── SerializationManager.kt  # 核心序列化管理（✓ 已实现）
+│   │   ├── TypeResolver.kt          # 类型解析（✓ 已实现）
+│   │   └── SerializerCache.kt       # 序列化器缓存（✓ 已实现）
+│   ├── CharonFlowImpl.kt            # CharonFlow实现（✓ 已实现）
 │   ├── registry/
-│   │   └── ChannelRegistry.kt   # channel注册表（新增，点对点）
+│   │   └── ChannelRegistry.kt   # channel注册表（○ 未实现：点对点）
 │   └── handlers/
-│       └── ErrorHandler.kt      # 错误处理策略（新增）
+│       └── ErrorHandler.kt      # 错误处理策略（○ 未实现）
 ├── protocol/
-│   ├── Serializer.kt             # 序列化接口
-│   ├── CborSerializer.kt         # CBOR实现
-│   └── TypeRegistry.kt           # 类型注册
+│   ├── Serializer.kt             # 序列化接口（○ 未实现）
+│   ├── CborSerializer.kt         # CBOR实现（○ 未实现）
+│   └── TypeRegistry.kt           # 类型注册（○ 未实现）
 ├── transport/
-│   ├── RedisTransport.kt         # Redis传输层
-│   ├── ConnectionManager.kt      # 连接管理器
+│   ├── RedisTransport.kt         # Redis传输层（○ 未实现）
+│   ├── ConnectionManager.kt      # 连接管理器（○ 未实现）
 │   └── health/
-│       └── HealthChecker.kt      # 健康检查
+│       └── HealthChecker.kt      # 健康检查（○ 未实现）
 ├── patterns/
-│   ├── PubSub.kt                 # Pub/Sub实现
-│   ├── RequestResponse.kt        # 请求-响应实现（点对点）
-│   ├── Rpc.kt                    # RPC实现
-│   ├── Multicast.kt              # 组播实现
-│   └── Broadcast.kt              # 广播实现
+│   ├── PubSub.kt                 # Pub/Sub实现（○ 未实现：部分逻辑在CharonFlowImpl）
+│   ├── RequestResponse.kt        # 请求-响应实现（点对点）（○ 未实现）
+│   ├── Rpc.kt                    # RPC实现（○ 未实现）
+│   ├── Multicast.kt              # 组播实现（○ 未实现）
+│   └── Broadcast.kt              # 广播实现（○ 未实现）
 ├── extensions/
-│   ├── ResultExtensions.kt       # Result扩展函数
-│   └── ErrorHandlingExtensions.kt # 错误处理扩展
+│   ├── ResultExtensions.kt       # Result扩展函数（✓ 已实现）
+│   └── ErrorHandlingExtensions.kt # 错误处理扩展（○ 未实现）
 └── examples/
-    └── BasicExamples.kt          # 使用示例
+    └── BasicExamples.kt          # 使用示例（○ 未实现）
 ```
 
 ## 核心接口签名（修订版）
@@ -365,20 +395,19 @@ interface CharonFlow : Closeable {
 
     // ============ Pub/Sub ============
     // 发布（handler接收反序列化对象）
-    suspend fun publish(topic: String, message: Any): Result<Unit>
+    suspend fun publish(topic: String, message: Any): Result<Unit>  // （✓ 已实现）
 
     // 订阅（非suspend注册，类型安全）
-    fun <T : Any> subscribe(
-        topic: String,
-        kclass: KClass<T>,
-        handler: suspend (message: T) -> Unit
-    ): Result<Subscription>
-
-    // 订阅Any类型（接收所有类型）
     fun subscribe(
         topic: String,
-        kclass: KClass<Any>,
-        handler: suspend (message: Any) -> Unit
+        handler: suspend (message: Any) -> Unit  // （✓ 已实现：接收反序列化对象）
+    ): Result<Subscription>
+
+    // 订阅类型安全版本（✓ 已实现）
+    fun <T : Any> subscribe(
+        topic: String,
+        clazz: KClass<T>,
+        handler: suspend (message: T) -> Unit
     ): Result<Subscription>
 
     // ============ 请求-响应模式（点对点） ============
@@ -702,6 +731,10 @@ sealed class SerializationException(message: String, cause: Throwable? = null) :
 - [x] 添加Any::class特殊处理逻辑
 - [x] Subscription调整updateHandler等方法签名
 - [x] Subscription实现pause状态忽略消息逻辑
+- [x] 修复设计缺陷：添加 topic 字段到 Message 类
+- [x] 修复设计缺陷：删除 PubSubMessage，统一使用 Message
+- [x] 修复实现缺陷：Subscription 持有 handler，添加消息处理逻辑
+- [x] 修复实现缺陷：正确使用异常类型和 Logger
 
 #### 阶段6：异常和错误处理
 
@@ -843,7 +876,26 @@ kotlin {
 - **2025-01-27**: 优化To Do结构，将RPC相关重构移至Post-MVP
     - 重新编号阶段为连续递增（阶段3-11）
     - 将RpcRequest重构、onRequest、registerRpc等任务移至阶段8
-- **当前状态**: 阶段3重构准备开始（配置和数据结构重构），聚焦MVP实现
+- **2025-01-27**: 完成阶段4（序列化管理器实现）
+    - 创建SerializationManager类（固定CBOR格式）
+    - 实现TypeResolver（FQN ↔ KClass映射）
+    - 实现SerializerCache（FQN → KSerializer缓存，不清空）
+    - 实现findSerializer流程（SerializersModule → 反射 → 失败）
+    - 实现Any::class特殊处理（不进行类型检查）
+    - 实现反序列化失败日志记录（WARN级别）
+- **2025-01-27**: 完成阶段5（API接口重构）
+    - CharonFlow.subscribe改为非suspend
+    - handler接收反序列化对象，不再接收cancel函数
+    - Subscription.updateHandler移除cancel参数
+    - Subscription实现pause/resume逻辑（pause状态忽略消息，不缓冲）
+    - 创建CharonFlowImpl、PubSubSubscription、PubSubManager
+    - Code Review反馈修复：
+        - 添加topic字段到Message类（Pub/Sub基础传输类）
+        - 删除PubSubMessage，统一使用Message
+        - Subscription持用handler，实现handleReceivedMessage
+        - 修复异常类型（TypeNotRegisteredException而非SubscriptionNotFoundException）
+        - 替换println为Logger
+- **当前状态**: 阶段5完成，准备开始阶段6（异常和错误处理）
 
 ---
 
