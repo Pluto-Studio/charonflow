@@ -743,11 +743,21 @@ sealed class SerializationException(message: String, cause: Throwable? = null) :
 - [x] 实现类型不匹配静默忽略逻辑（CharonFlowImpl.handleIncomingMessage中检查类型匹配，不匹配则DEBUG日志并跳过）
 - [x] 添加消息分发逻辑（CharonFlowImpl.handleIncomingMessage统一处理接收到的消息）
 
-#### 阶段7：Pub/Sub模式实现（MVP核心 - 必须完成）
+#### 阶段7：Pub/Sub模式实现（MVP核心 - 已完成）
 
-- [ ] 实现Pub/Sub核心功能
-- [ ] 实现订阅管理（四种取消方式 + pause/resume）
-- [ ] 创建测试用例验证Pub/Sub
+- [x] 实现Pub/Sub核心功能
+  - 创建 RedisConnectionManager（管理 Redis 连接和 Pub/Sub 连接）
+  - 创建 PubSubMessageListener（监听 Redis Pub/Sub 消息）
+  - 实现 publish 方法（使用 Lettuce 发布消息到 Redis）
+  - 实现 subscribe 方法（订阅 Redis 主题并注册消息处理器）
+- [x] 实现订阅管理（四种取消方式 + pause/resume）
+  - unsubscribe() 取消订阅
+  - pause() 暂停接收消息（忽略消息，不缓冲）
+  - resume() 恢复接收消息
+  - close() 时自动取消所有订阅
+- [x] 创建测试用例验证Pub/Sub
+  - CharonFlowPubSubTest.kt 包含 6 个测试用例
+  - 测试基础 Pub/Sub、Any 类型订阅、类型过滤、pause/resume、handler 异常
 
 ### Post-MVP阶段（后续实现）
 
@@ -896,7 +906,15 @@ kotlin {
         - Subscription持用handler，实现handleReceivedMessage
         - 修复异常类型（TypeNotRegisteredException而非SubscriptionNotFoundException）
         - 替换println为Logger
-- **当前状态**: 阶段6完成，准备开始阶段7（Pub/Sub模式实现）
+- **当前状态**: **MVP已完成！** 阶段7完成，所有MVP功能已实现
+- **2025-01-27**: 完成阶段7（Pub/Sub模式实现）
+    - 创建 RedisConnectionManager（管理 Redis 连接和 Pub/Sub 连接，使用 ByteArrayCodec 编解码）
+    - 创建 PubSubMessageListener（实现 RedisPubSubListener，接收消息并路由到 CharonFlowImpl）
+    - 实现 publish 方法（序列化 Message 为 CBOR 并使用 Lettuce 发布到 Redis）
+    - 实现 subscribe 方法（订阅 Redis 主题，添加 PubSubMessageListener，管理订阅生命周期）
+    - 完善订阅管理（unsubscribe、pause、resume、close 自动清理）
+    - 创建 CharonFlowPubSubTest.kt 测试类（6 个测试用例覆盖主要场景）
+    - 修复 CharonFlow.create 工厂方法（移到接口 companion object 中）
 - **2025-01-27**: 完成阶段6（异常和错误处理）
     - SerializationException子类已存在（SerializeFailedException, DeserializeFailedException, TypeNotRegisteredException, TypeMismatchException）
     - 实现handler异常终止订阅逻辑（PubSubSubscription.handleReceivedMessage捕获异常后设置_isActive=false并更新stats）

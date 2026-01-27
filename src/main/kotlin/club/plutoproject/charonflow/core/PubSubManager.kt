@@ -93,6 +93,24 @@ internal class PubSubManager {
     }
 
     /**
+     * 检查主题是否还有活跃的订阅
+     */
+    fun hasActiveSubscriptions(topic: String): Boolean {
+        return topicIndex[topic]?.any { id ->
+            subscriptions[id]?.isActive == true
+        } ?: false
+    }
+
+    /**
+     * 获取所有活跃的主题
+     */
+    fun getActiveTopics(): Set<String> {
+        return topicIndex.filter { (_, ids) ->
+            ids.any { id -> subscriptions[id]?.isActive == true }
+        }.keys
+    }
+
+    /**
      * 关闭管理器
      */
     fun close() {

@@ -3,6 +3,7 @@ package club.plutoproject.charonflow
 import club.plutoproject.charonflow.config.Config
 import club.plutoproject.charonflow.core.RpcRequest
 import club.plutoproject.charonflow.core.Subscription
+import club.plutoproject.charonflow.internal.CharonFlowImpl
 import kotlinx.coroutines.flow.Flow
 import kotlin.reflect.KClass
 import java.io.Closeable
@@ -18,6 +19,18 @@ import java.io.Closeable
  * - Stream RPC（流式 RPC）
  */
 interface CharonFlow : Closeable {
+
+    companion object {
+        /**
+         * 创建 CharonFlow 实例
+         *
+         * @param config 配置对象
+         * @return CharonFlow 实例
+         */
+        fun create(config: Config): CharonFlow {
+            return CharonFlowImpl(config)
+        }
+    }
 
     // region 配置和状态
 

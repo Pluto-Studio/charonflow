@@ -13,11 +13,16 @@ import club.plutoproject.charonflow.core.exceptions.SerializeFailedException
 import club.plutoproject.charonflow.core.exceptions.TypeNotRegisteredException
 import club.plutoproject.charonflow.internal.serialization.SerializationManager
 import club.plutoproject.charonflow.internal.serialization.TypeResolver
+import club.plutoproject.charonflow.internal.transport.PubSubMessageListener
+import club.plutoproject.charonflow.internal.transport.RedisConnectionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.cbor.Cbor
+import kotlinx.serialization.encodeToByteArray
 import org.slf4j.LoggerFactory
 import java.util.UUID
 import kotlin.reflect.KClass
@@ -29,6 +34,7 @@ private val logger = LoggerFactory.getLogger(CharonFlowImpl::class.java)
  *
  * 实现 CharonFlow 接口，提供多种通讯模式的统一实现。
  */
+@OptIn(ExperimentalSerializationApi::class)
 internal class CharonFlowImpl(
     override val config: Config
 ) : CharonFlow {
@@ -36,11 +42,18 @@ internal class CharonFlowImpl(
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val serializationManager = SerializationManager(config.serializersModule)
     private val pubSubManager = PubSubManager()
+    private val connectionManager = RedisConnectionManager(config)
+    private val cbor = Cbor {
+        serializersModule = config.serializersModule
+    }
+
+    // 已订阅的主题集合（避免重复订阅）
+    private val subscribedTopics = mutableSetOf<String>()
 
     // region 状态管理
 
     override val isConnected: Boolean
-        get() = TODO("实际实现连接状态检查")
+        get() = connectionManager.isConnected
 
     override val connectionInfo: ConnectionInfo
         get() = TODO("实际实现连接信息获取")
@@ -93,6 +106,21 @@ internal class CharonFlowImpl(
         )
 
         pubSubManager.addSubscription(subscription)
+
+        // 如果这是该主题的第一个订阅，则订阅 Redis
+        if (subscribedTopics.add(topic)) {
+            try {
+                val pubSubConn = connectionManager.getPubSubConnection()
+                pubSubConn.addListener(PubSubMessageListener(this))
+                pubSubConn.sync().subscribe(topic)
+                logger.debug("Subscribed to Redis topic: {}", topic)
+            } catch (e: Exception) {
+                subscribedTopics.remove(topic)
+                pubSubManager.removeSubscription(subscription.id)
+                return Result.failure(e)
+            }
+        }
+
         return Result.success(subscription)
     }
 
@@ -109,8 +137,16 @@ internal class CharonFlowImpl(
                 source = config.clientId
             )
 
+            // 序列化整个 Message 对象
+            val messageBytes = cbor.encodeToByteArray(messageToSend)
+
             logger.debug("Publishing message to topic {}: type={}, size={}", topic, messageToSend.payloadType, bytes.size)
-            TODO("实际实现发布逻辑")
+
+            // 使用 Redis 发布
+            val connection = connectionManager.getConnection()
+            connection.sync().publish(topic, messageBytes)
+
+            Result.success(Unit)
         } catch (e: SerializeFailedException) {
             logger.error("Failed to serialize message for topic {}: {}", topic, e.message, e)
             Result.failure(e)
@@ -290,5 +326,6 @@ internal class CharonFlowImpl(
     override fun close() {
         coroutineScope.cancel()
         pubSubManager.close()
+        connectionManager.close()
     }
 }
