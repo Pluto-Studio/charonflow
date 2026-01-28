@@ -1,6 +1,6 @@
 package club.plutoproject.charonflow
 
-import club.plutoproject.charonflow.config.Config
+import club.plutoproject.charonflow.config.CharonFlowConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
@@ -37,7 +37,7 @@ class CharonFlowPubSubTest {
 
     @BeforeEach
     fun setUp() {
-        val config = Config(
+        val config = CharonFlowConfig(
             redisUri = "redis://localhost:6379",
             serializersModule = SerializersModule {
                 contextual(TestMessage::class, TestMessage.serializer())

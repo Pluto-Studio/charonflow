@@ -1,4 +1,4 @@
-package club.plutoproject.charonflow.core
+package club.plutoproject.charonflow.internal.core
 
 import kotlinx.serialization.Serializable
 import java.util.*
@@ -222,5 +222,42 @@ data class Message(
      */
     fun withTtl(ttl: Long): Message = copy(ttl = ttl)
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Message
+
+        if (timestamp != other.timestamp) return false
+        if (priority != other.priority) return false
+        if (ttl != other.ttl) return false
+        if (topic != other.topic) return false
+        if (!payload.contentEquals(other.payload)) return false
+        if (payloadType != other.payloadType) return false
+        if (id != other.id) return false
+        if (headers != other.headers) return false
+        if (source != other.source) return false
+        if (target != other.target) return false
+        if (correlationId != other.correlationId) return false
+        if (replyTo != other.replyTo) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = timestamp.hashCode()
+        result = 31 * result + priority
+        result = 31 * result + ttl.hashCode()
+        result = 31 * result + topic.hashCode()
+        result = 31 * result + payload.contentHashCode()
+        result = 31 * result + payloadType.hashCode()
+        result = 31 * result + id.hashCode()
+        result = 31 * result + headers.hashCode()
+        result = 31 * result + (source?.hashCode() ?: 0)
+        result = 31 * result + (target?.hashCode() ?: 0)
+        result = 31 * result + (correlationId?.hashCode() ?: 0)
+        result = 31 * result + (replyTo?.hashCode() ?: 0)
+        return result
+    }
 
 }

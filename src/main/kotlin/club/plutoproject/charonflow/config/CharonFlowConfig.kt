@@ -10,7 +10,7 @@ import kotlin.time.Duration.Companion.seconds
  *
  * 包含所有可配置的选项，用于创建 CharonFlow 实例。
  */
-data class Config(
+data class CharonFlowConfig(
     /**
      * Redis 连接 URI
      * 格式: redis://[password@]host[:port][/database]

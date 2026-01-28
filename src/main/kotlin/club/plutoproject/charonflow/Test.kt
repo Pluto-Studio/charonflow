@@ -1,6 +1,6 @@
 package club.plutoproject.charonflow
 
-import club.plutoproject.charonflow.config.Config
+import club.plutoproject.charonflow.config.CharonFlowConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.InternalSerializationApi
@@ -15,7 +15,7 @@ data class TestMessage1(
 
 @OptIn(InternalSerializationApi::class)
 fun main(): Unit = runBlocking {
-    val config = Config(
+    val config = CharonFlowConfig(
         redisUri = "redis://localhost:6379",
         serializersModule = SerializersModule {
             contextual(TestMessage1::class, TestMessage1::class.serializer())

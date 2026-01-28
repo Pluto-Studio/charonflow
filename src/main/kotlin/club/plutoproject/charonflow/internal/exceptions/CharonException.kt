@@ -1,7 +1,10 @@
-package club.plutoproject.charonflow.core.exceptions
+package club.plutoproject.charonflow.internal.exceptions
 
 import io.lettuce.core.RedisCommandTimeoutException
 import io.lettuce.core.RedisConnectionException
+import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
 
 /**
  * CharonFlow 基础异常类
@@ -54,7 +57,7 @@ sealed class CharonException(
 sealed class ConnectionException(
     message: String,
     cause: Throwable? = null,
-    override val severity: CharonException.Severity = CharonException.Severity.HIGH
+    override val severity: Severity = Severity.HIGH
 ) : CharonException(message, cause) {
     override val retryable: Boolean = true
 }
@@ -126,7 +129,7 @@ class ConnectionPoolExhaustedException(
 sealed class SerializationException(
     message: String,
     cause: Throwable? = null,
-    override val severity: CharonException.Severity = CharonException.Severity.MEDIUM
+    override val severity: Severity = Severity.MEDIUM
 ) : CharonException(message, cause) {
     override val retryable: Boolean = false
 }
@@ -187,7 +190,7 @@ class TypeMismatchException(
 sealed class OperationException(
     message: String,
     cause: Throwable? = null,
-    override val severity: CharonException.Severity = CharonException.Severity.MEDIUM
+    override val severity: Severity = Severity.MEDIUM
 ) : CharonException(message, cause) {
     override val retryable: Boolean = true
 }
@@ -260,7 +263,7 @@ class MessageTooLargeException(
 sealed class RpcException(
     message: String,
     cause: Throwable? = null,
-    override val severity: CharonException.Severity = CharonException.Severity.MEDIUM
+    override val severity: Severity = Severity.MEDIUM
 ) : CharonException(message, cause) {
     override val retryable: Boolean = false
 }
@@ -310,7 +313,7 @@ class RpcInvalidArgumentException(
 sealed class ConfigurationException(
     message: String,
     cause: Throwable? = null,
-    override val severity: CharonException.Severity = CharonException.Severity.HIGH
+    override val severity: Severity = Severity.HIGH
 ) : CharonException(message, cause) {
     override val retryable: Boolean = false
 }
@@ -348,7 +351,7 @@ class MissingConfigurationException(
 sealed class ResourceException(
     message: String,
     cause: Throwable? = null,
-    override val severity: CharonException.Severity = CharonException.Severity.HIGH
+    override val severity: Severity = Severity.HIGH
 ) : CharonException(message, cause) {
     override val retryable: Boolean = false
 }
@@ -394,9 +397,9 @@ object ExceptionUtils {
             is CharonException -> exception.retryable
             is RedisConnectionException -> true
             is RedisCommandTimeoutException -> true
-            is java.net.ConnectException -> true
-            is java.net.SocketTimeoutException -> true
-            is java.io.IOException -> true
+            is ConnectException -> true
+            is SocketTimeoutException -> true
+            is IOException -> true
             else -> false
         }
     }
@@ -409,9 +412,9 @@ object ExceptionUtils {
             is CharonException -> exception.code
             is RedisConnectionException -> "REDIS_CONNECTION_ERROR"
             is RedisCommandTimeoutException -> "REDIS_COMMAND_TIMEOUT_ERROR"
-            is java.net.ConnectException -> "NETWORK_CONNECT_ERROR"
-            is java.net.SocketTimeoutException -> "NETWORK_TIMEOUT_ERROR"
-            is java.io.IOException -> "IO_ERROR"
+            is ConnectException -> "NETWORK_CONNECT_ERROR"
+            is SocketTimeoutException -> "NETWORK_TIMEOUT_ERROR"
+            is IOException -> "IO_ERROR"
             else -> "UNKNOWN_ERROR"
         }
     }
@@ -424,9 +427,9 @@ object ExceptionUtils {
             is CharonException -> exception.severity
             is RedisConnectionException -> CharonException.Severity.HIGH
             is RedisCommandTimeoutException -> CharonException.Severity.MEDIUM
-            is java.net.ConnectException -> CharonException.Severity.HIGH
-            is java.net.SocketTimeoutException -> CharonException.Severity.MEDIUM
-            is java.io.IOException -> CharonException.Severity.MEDIUM
+            is ConnectException -> CharonException.Severity.HIGH
+            is SocketTimeoutException -> CharonException.Severity.MEDIUM
+            is IOException -> CharonException.Severity.MEDIUM
             else -> CharonException.Severity.MEDIUM
         }
     }

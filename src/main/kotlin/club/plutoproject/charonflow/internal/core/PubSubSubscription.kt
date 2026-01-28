@@ -1,9 +1,8 @@
-package club.plutoproject.charonflow.core
+package club.plutoproject.charonflow.internal.core
 
-import club.plutoproject.charonflow.core.exceptions.SubscriptionNotFoundException
-import org.slf4j.LoggerFactory
-
-private val logger = LoggerFactory.getLogger(PubSubSubscription::class.java)
+import club.plutoproject.charonflow.internal.exceptions.SubscriptionNotFoundException
+import club.plutoproject.charonflow.internal.logger
+import kotlinx.coroutines.delay
 
 /**
  * PubSub 实现的订阅接口
@@ -53,7 +52,13 @@ internal class PubSubSubscription(
 
     override suspend fun pause(): Result<Unit> {
         if (!_isActive) {
-            return Result.failure(SubscriptionNotFoundException("Subscription $id is not active", subscriptionId = id, topic = topic))
+            return Result.failure(
+                SubscriptionNotFoundException(
+                    "Subscription $id is not active",
+                    subscriptionId = id,
+                    topic = topic
+                )
+            )
         }
 
         _isPaused = true
@@ -64,7 +69,13 @@ internal class PubSubSubscription(
 
     override suspend fun resume(): Result<Unit> {
         if (!_isActive) {
-            return Result.failure(SubscriptionNotFoundException("Subscription $id is not active", subscriptionId = id, topic = topic))
+            return Result.failure(
+                SubscriptionNotFoundException(
+                    "Subscription $id is not active",
+                    subscriptionId = id,
+                    topic = topic
+                )
+            )
         }
 
         _isPaused = false
@@ -123,7 +134,7 @@ internal class PubSubSubscription(
     override suspend fun await(): Result<Unit> {
         while (isActive) {
             // TODO: 实现等待逻辑
-            kotlinx.coroutines.delay(100)
+            delay(100)
         }
         return Result.success(Unit)
     }
@@ -157,7 +168,9 @@ internal class PubSubSubscription(
             incrementMessageCount()
             true
         } catch (e: Exception) {
-            logger.error("Handler threw exception in subscription {}, cancelling subscription. Error: {}", id, e.message, e)
+            logger.error(
+                "Handler threw exception in subscription {}, cancelling subscription. Error: {}", id, e.message, e
+            )
             _isActive = false
             updateStats { it.copy(isActive = false) }
             false

@@ -3,14 +3,13 @@ package club.plutoproject.charonflow.internal
 import club.plutoproject.charonflow.CharonFlow
 import club.plutoproject.charonflow.ConnectionInfo
 import club.plutoproject.charonflow.Stats
-import club.plutoproject.charonflow.config.Config
-import club.plutoproject.charonflow.core.Message
-import club.plutoproject.charonflow.core.PubSubManager
-import club.plutoproject.charonflow.core.PubSubSubscription
-import club.plutoproject.charonflow.core.RpcRequest
-import club.plutoproject.charonflow.core.Subscription
-import club.plutoproject.charonflow.core.exceptions.SerializeFailedException
-import club.plutoproject.charonflow.core.exceptions.TypeNotRegisteredException
+import club.plutoproject.charonflow.config.CharonFlowConfig
+import club.plutoproject.charonflow.internal.core.Message
+import club.plutoproject.charonflow.internal.core.PubSubManager
+import club.plutoproject.charonflow.internal.core.PubSubSubscription
+import club.plutoproject.charonflow.internal.core.Subscription
+import club.plutoproject.charonflow.internal.exceptions.SerializeFailedException
+import club.plutoproject.charonflow.internal.exceptions.TypeNotRegisteredException
 import club.plutoproject.charonflow.internal.serialization.SerializationManager
 import club.plutoproject.charonflow.internal.serialization.TypeResolver
 import club.plutoproject.charonflow.internal.transport.PubSubMessageListener
@@ -19,15 +18,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.encodeToByteArray
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 import kotlin.reflect.KClass
 
-private val logger = LoggerFactory.getLogger(CharonFlowImpl::class.java)
+internal val logger = LoggerFactory.getLogger("CharonFlow")
 
 /**
  * CharonFlow 公共实现类
@@ -36,7 +34,7 @@ private val logger = LoggerFactory.getLogger(CharonFlowImpl::class.java)
  */
 @OptIn(ExperimentalSerializationApi::class)
 internal class CharonFlowImpl(
-    override val config: Config
+    override val config: CharonFlowConfig
 ) : CharonFlow {
 
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -140,7 +138,12 @@ internal class CharonFlowImpl(
             // 序列化整个 Message 对象
             val messageBytes = cbor.encodeToByteArray(messageToSend)
 
-            logger.debug("Publishing message to topic {}: type={}, size={}", topic, messageToSend.payloadType, bytes.size)
+            logger.debug(
+                "Publishing message to topic {}: type={}, size={}",
+                topic,
+                messageToSend.payloadType,
+                bytes.size
+            )
 
             // 使用 Redis 发布
             val connection = connectionManager.getConnection()
@@ -155,43 +158,6 @@ internal class CharonFlowImpl(
             Result.failure(e)
         }
     }
-
-    // endregion
-
-    // region 其他模式（MVP 暂不实现）
-
-    override suspend fun <T : Any> request(channel: String, request: Any): Result<T> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
-
-    override suspend fun onRequest(channel: String, handler: suspend (request: Any) -> Any): Result<Unit> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
-
-    override suspend fun <T : Any, R : Any> onRequest(
-        channel: String,
-        requestClass: Class<T>,
-        handler: suspend (request: T) -> R
-    ): Result<Unit> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
-
-    override suspend fun <T : Any, R : Any> rpc(method: String, param: T): Result<R> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
-
-    override suspend fun <R : Any> rpc(method: String, request: RpcRequest): Result<R> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
-
-    override suspend fun <R : Any> rpc(method: String, vararg params: Any): Result<R> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
-
-    override suspend fun <T : Any, R : Any> registerRpc(method: String, handler: suspend (param: T) -> R): Result<Unit> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
-
-    override suspend fun <T : Any, R : Any> streamRpc(method: String, param: T): Flow<R> = TODO("Not implemented yet")
-
-    override suspend fun <T : Any, R : Any> registerStreamRpc(
-        method: String,
-        handler: suspend (param: T) -> Flow<R>
-    ): Result<Unit> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
 
     // endregion
 
@@ -280,6 +246,7 @@ internal class CharonFlowImpl(
                     // Any 类型特殊处理：按实际 payloadType 反序列化
                     serializationManager.deserializeAsAny(message.payload, message.payloadType)
                 }
+
                 else -> {
                     // 获取目标类型的 KClass
                     @Suppress("UNCHECKED_CAST")
@@ -293,14 +260,21 @@ internal class CharonFlowImpl(
             }
 
             if (deserializedMessage == null) {
-                logger.warn("Failed to deserialize message of type '{}' for subscription {}", message.payloadType, subscription.id)
+                logger.warn(
+                    "Failed to deserialize message of type '{}' for subscription {}",
+                    message.payloadType,
+                    subscription.id
+                )
                 return@forEach
             }
 
             // 分发到 handler
             val processed = subscription.handleReceivedMessage(deserializedMessage)
             if (!processed) {
-                logger.debug("Message not processed by subscription {} (possibly paused or handler threw exception)", subscription.id)
+                logger.debug(
+                    "Message not processed by subscription {} (possibly paused or handler threw exception)",
+                    subscription.id
+                )
             }
         }
     }

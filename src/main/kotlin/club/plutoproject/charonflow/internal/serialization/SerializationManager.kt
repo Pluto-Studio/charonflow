@@ -1,17 +1,15 @@
 package club.plutoproject.charonflow.internal.serialization
 
-import club.plutoproject.charonflow.core.exceptions.SerializeFailedException
-import club.plutoproject.charonflow.core.exceptions.TypeNotRegisteredException
+import club.plutoproject.charonflow.internal.exceptions.SerializeFailedException
+import club.plutoproject.charonflow.internal.exceptions.TypeNotRegisteredException
+import club.plutoproject.charonflow.internal.logger
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializerOrNull
-import org.slf4j.LoggerFactory
 import kotlin.reflect.KClass
-
-private val logger = LoggerFactory.getLogger(SerializationManager::class.java)
 
 /**
  * 序列化管理器
@@ -71,7 +69,11 @@ internal class SerializationManager(
         }
 
         if (payloadType != TypeResolver.getFQN(targetType)) {
-            logger.debug("Type mismatch: payload type '{}' does not match target type '{}'. Skipping message.", payloadType, TypeResolver.getFQN(targetType))
+            logger.debug(
+                "Type mismatch: payload type '{}' does not match target type '{}'. Skipping message.",
+                payloadType,
+                TypeResolver.getFQN(targetType)
+            )
             return null
         }
 
@@ -133,10 +135,10 @@ internal class SerializationManager(
 
         val serializer: KSerializer<T> = serializersModule.getContextual(kClass)
             ?: kClass.serializerOrNull()
-                ?: throw TypeNotRegisteredException(
-                    message = "No serializer found for type '$fqn'",
-                    typeName = fqn
-                )
+            ?: throw TypeNotRegisteredException(
+                message = "No serializer found for type '$fqn'",
+                typeName = fqn
+            )
 
         cache.put(fqn, serializer as KSerializer<*>)
         return serializer

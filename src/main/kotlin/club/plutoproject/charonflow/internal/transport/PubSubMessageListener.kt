@@ -1,6 +1,6 @@
 package club.plutoproject.charonflow.internal.transport
 
-import club.plutoproject.charonflow.core.Message
+import club.plutoproject.charonflow.internal.core.Message
 import club.plutoproject.charonflow.internal.CharonFlowImpl
 import io.lettuce.core.pubsub.RedisPubSubListener
 import kotlinx.serialization.ExperimentalSerializationApi

@@ -1,8 +1,7 @@
 package club.plutoproject.charonflow.internal.transport
 
-import club.plutoproject.charonflow.config.Config
-import club.plutoproject.charonflow.core.exceptions.ConnectionException
-import club.plutoproject.charonflow.core.exceptions.RedisConnectionException
+import club.plutoproject.charonflow.config.CharonFlowConfig
+import club.plutoproject.charonflow.internal.exceptions.RedisConnectionException
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
 import io.lettuce.core.api.StatefulRedisConnection
@@ -17,7 +16,7 @@ private val logger = LoggerFactory.getLogger(RedisConnectionManager::class.java)
  * 管理 Redis 连接的生命周期，包括普通连接和 Pub/Sub 连接。
  */
 internal class RedisConnectionManager(
-    private val config: Config
+    private val config: CharonFlowConfig
 ) : AutoCloseable {
 
     private val redisClient: RedisClient

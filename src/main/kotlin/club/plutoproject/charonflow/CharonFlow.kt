@@ -1,12 +1,10 @@
 package club.plutoproject.charonflow
 
-import club.plutoproject.charonflow.config.Config
-import club.plutoproject.charonflow.core.RpcRequest
-import club.plutoproject.charonflow.core.Subscription
+import club.plutoproject.charonflow.config.CharonFlowConfig
 import club.plutoproject.charonflow.internal.CharonFlowImpl
-import kotlinx.coroutines.flow.Flow
-import kotlin.reflect.KClass
+import club.plutoproject.charonflow.internal.core.Subscription
 import java.io.Closeable
+import kotlin.reflect.KClass
 
 /**
  * CharonFlow 主接口
@@ -27,7 +25,7 @@ interface CharonFlow : Closeable {
          * @param config 配置对象
          * @return CharonFlow 实例
          */
-        fun create(config: Config): CharonFlow {
+        fun create(config: CharonFlowConfig): CharonFlow {
             return CharonFlowImpl(config)
         }
     }
@@ -37,7 +35,7 @@ interface CharonFlow : Closeable {
     /**
      * 获取当前配置
      */
-    val config: Config
+    val config: CharonFlowConfig
 
     /**
      * 检查是否已连接
@@ -87,125 +85,6 @@ interface CharonFlow : Closeable {
         clazz: KClass<T>,
         handler: suspend (message: T) -> Unit
     ): Result<Subscription>
-
-    // endregion
-
-    // region 请求-响应模式
-
-    /**
-     * 发送请求并等待响应
-     *
-     * @param T 响应类型
-     * @param channel 请求通道名称
-     * @param request 请求内容
-     * @return 响应结果，成功返回响应数据，失败返回错误信息
-     */
-    suspend fun <T : Any> request(channel: String, request: Any): Result<T>
-
-    /**
-     * 注册请求处理器
-     *
-     * @param channel 请求通道名称
-     * @param handler 请求处理函数，接收请求并返回响应
-     * @return 注册结果，成功返回 Unit，失败返回错误信息
-     */
-    suspend fun onRequest(
-        channel: String,
-        handler: suspend (request: Any) -> Any
-    ): Result<Unit>
-
-    /**
-     * 注册请求处理器（类型安全版本）
-     *
-     * @param T 请求类型
-     * @param R 响应类型
-     * @param channel 请求通道名称
-     * @param handler 请求处理函数，接收类型安全的请求并返回响应
-     * @return 注册结果，成功返回 Unit，失败返回错误信息
-     */
-    suspend fun <T : Any, R : Any> onRequest(
-        channel: String,
-        requestClass: Class<T>,
-        handler: suspend (request: T) -> R
-    ): Result<Unit>
-
-    // endregion
-
-    // region RPC 模式
-
-    /**
-     * 远程过程调用（单参数）
-     *
-     * @param T 参数类型
-     * @param R 返回值类型
-     * @param method 方法名称
-     * @param param 参数值
-     * @return 调用结果，成功返回返回值，失败返回错误信息
-     */
-    suspend fun <T : Any, R : Any> rpc(method: String, param: T): Result<R>
-
-    /**
-     * 远程过程调用（多参数）
-     *
-     * @param R 返回值类型
-     * @param method 方法名称
-     * @param request 包含多个参数的请求对象
-     * @return 调用结果，成功返回返回值，失败返回错误信息
-     */
-    suspend fun <R : Any> rpc(method: String, request: RpcRequest): Result<R>
-
-    /**
-     * 远程过程调用（可变参数）
-     *
-     * @param R 返回值类型
-     * @param method 方法名称
-     * @param params 可变参数列表
-     * @return 调用结果，成功返回返回值，失败返回错误信息
-     */
-    suspend fun <R : Any> rpc(method: String, vararg params: Any): Result<R>
-
-    /**
-     * 注册 RPC 方法处理器
-     *
-     * @param T 参数类型
-     * @param R 返回值类型
-     * @param method 方法名称
-     * @param handler 方法处理函数
-     * @return 注册结果，成功返回 Unit，失败返回错误信息
-     */
-    suspend fun <T : Any, R : Any> registerRpc(
-        method: String,
-        handler: suspend (param: T) -> R
-    ): Result<Unit>
-
-    // endregion
-
-    // region 流式 RPC 模式
-
-    /**
-     * 流式远程过程调用
-     *
-     * @param T 参数类型
-     * @param R 流元素类型
-     * @param method 方法名称
-     * @param param 参数值
-     * @return 流式响应
-     */
-    suspend fun <T : Any, R : Any> streamRpc(method: String, param: T): Flow<R>
-
-    /**
-     * 注册流式 RPC 方法处理器
-     *
-     * @param T 参数类型
-     * @param R 流元素类型
-     * @param method 方法名称
-     * @param handler 流式方法处理函数
-     * @return 注册结果，成功返回 Unit，失败返回错误信息
-     */
-    suspend fun <T : Any, R : Any> registerStreamRpc(
-        method: String,
-        handler: suspend (param: T) -> Flow<R>
-    ): Result<Unit>
 
     // endregion
 
