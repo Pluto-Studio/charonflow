@@ -6,6 +6,7 @@ import club.plutoproject.charonflow.SubscriptionNotFoundException
 import club.plutoproject.charonflow.SubscriptionStats
 import club.plutoproject.charonflow.internal.logger
 import kotlinx.coroutines.delay
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * PubSub 实现的订阅接口
@@ -20,7 +21,7 @@ internal class PubSubSubscription(
     private var _isActive: Boolean = true,
     private var _isPaused: Boolean = false,
     override val messageCount: Long = 0L,
-    override val stats: SubscriptionStats = SubscriptionStats(
+    stats: SubscriptionStats = SubscriptionStats(
         messageCount = 0L,
         errorCount = 0L,
         lastMessageTime = null,
@@ -40,8 +41,12 @@ internal class PubSubSubscription(
 ) : Subscription {
 
     private var _lastActivityTime: Long = lastActivityTime
+    private val _stats = AtomicReference(stats)
 
     // region 属性
+
+    override val stats: SubscriptionStats
+        get() = _stats.get()
 
     override val isActive: Boolean
         get() = _isActive && !_isPaused
@@ -196,7 +201,14 @@ internal class PubSubSubscription(
     }
 
     private fun updateStats(update: (SubscriptionStats) -> SubscriptionStats) {
-        // TODO: 实现 stats 更新逻辑
+        // CAS 并发安全地更新 stats
+        while (true) {
+            val current = _stats.get()
+            val newStats = update(current)
+            if (_stats.compareAndSet(current, newStats)) {
+                break
+            }
+        }
     }
 
     // endregion
