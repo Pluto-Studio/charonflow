@@ -145,7 +145,8 @@ internal class PubSubSubscription(
     // region 统计信息
 
     override fun resetStats() {
-        // TODO: 实现统计重置
+        _stats.set(SubscriptionStats())
+        logger.debug("Stats reset for subscription {}", id)
     }
 
     override fun getDetailedStats(): DetailedSubscriptionStats {

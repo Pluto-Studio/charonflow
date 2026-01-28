@@ -151,10 +151,10 @@ interface Subscription {
  * 订阅统计信息
  */
 data class SubscriptionStats(
-    val messageCount: Long,
-    val errorCount: Long,
-    val lastMessageTime: Long?,
-    val averageProcessingTime: Double,
+    val messageCount: Long = 0L,
+    val errorCount: Long = 0L,
+    val lastMessageTime: Long? = null,
+    val averageProcessingTime: Double = 0.0,
 )
 
 /**
