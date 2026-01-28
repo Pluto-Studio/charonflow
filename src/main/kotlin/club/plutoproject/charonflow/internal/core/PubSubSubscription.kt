@@ -9,7 +9,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -42,6 +42,8 @@ internal class PubSubSubscription(
     private val _handler = AtomicReference(handler)
     private var _onUnsubscribeCallback: (suspend () -> Unit)? = null
     private val _completionDeferred = CompletableDeferred<Result<Unit>>()
+    private val _onCompleteCallbacks = CopyOnWriteArrayList<(Result<Unit>) -> Unit>()
+    private val _onErrorCallbacks = CopyOnWriteArrayList<(Throwable) -> Unit>()
 
     // region 属性
 
@@ -108,7 +110,7 @@ internal class PubSubSubscription(
                 )
             )
         }
-        
+
         _handler.set(handler)
         updateLastActivityTime()
         logger.debug("Handler updated for subscription {}", id)
@@ -127,6 +129,8 @@ internal class PubSubSubscription(
         updateLastActivityTime()
         _onUnsubscribeCallback?.invoke()
         _completionDeferred.complete(Result.success(Unit))
+        // 触发完成回调
+        _onCompleteCallbacks.forEach { it(Result.success(Unit)) }
         logger.debug("Subscription {} unsubscribed", id)
         return Result.success(Unit)
     }
@@ -174,11 +178,15 @@ internal class PubSubSubscription(
     }
 
     override fun onComplete(callback: (Result<Unit>) -> Unit) {
-        TODO("实现完成回调")
+        _onCompleteCallbacks.add(callback)
+        // 如果订阅已经完成，立即触发回调
+        if (!_isActive.get() && _completionDeferred.isCompleted) {
+            callback(Result.success(Unit))
+        }
     }
 
     override fun onError(callback: (Throwable) -> Unit) {
-        TODO("实现错误回调")
+        _onErrorCallbacks.add(callback)
     }
 
     // endregion
@@ -206,6 +214,8 @@ internal class PubSubSubscription(
                 "Handler threw exception in subscription {}, cancelling subscription. Error: {}", id, e.message, e
             )
             _isActive.compareAndSet(true, false)
+            // 触发错误回调
+            _onErrorCallbacks.forEach { it(e) }
             false
         }
     }
