@@ -111,7 +111,7 @@ data class ExponentialBackoffStrategy(
         require(initialDelay.isPositive()) { "Initial delay must be positive" }
         require(multiplier > 1.0) { "Multiplier must be > 1.0" }
         require(maxDelay.isPositive()) { "Max delay must be positive" }
-        require(jitterFactor >= 0.0 && jitterFactor <= 1.0) { "Jitter factor must be between 0.0 and 1.0" }
+        require(jitterFactor in 0.0..1.0) { "Jitter factor must be between 0.0 and 1.0" }
     }
 
     override fun calculateDelay(attempt: Int): Duration {
