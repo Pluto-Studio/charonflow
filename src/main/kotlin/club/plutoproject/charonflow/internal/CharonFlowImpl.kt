@@ -1,7 +1,6 @@
 package club.plutoproject.charonflow.internal
 
 import club.plutoproject.charonflow.CharonFlow
-import club.plutoproject.charonflow.ConnectionInfo
 import club.plutoproject.charonflow.Stats
 import club.plutoproject.charonflow.config.CharonFlowConfig
 import club.plutoproject.charonflow.internal.core.Message
@@ -55,9 +54,6 @@ internal class CharonFlowImpl(
 
     override val isConnected: Boolean
         get() = connectionManager.isConnected
-
-    override val connectionInfo: ConnectionInfo
-        get() = TODO("实际实现连接信息获取")
 
     // endregion
 
@@ -196,8 +192,6 @@ internal class CharonFlowImpl(
     // endregion
 
     // region 工具方法
-
-    override suspend fun healthCheck(): Boolean = false
 
     override fun getStats(): Stats = Stats(
         messagesPublished = 0L,

@@ -1,6 +1,5 @@
 package club.plutoproject.charonflow.internal.core
 
-import club.plutoproject.charonflow.DetailedSubscriptionStats
 import club.plutoproject.charonflow.Subscription
 import club.plutoproject.charonflow.SubscriptionNotFoundException
 import club.plutoproject.charonflow.SubscriptionStats
@@ -155,18 +154,6 @@ internal class PubSubSubscription(
     override fun resetStats() {
         _stats.set(SubscriptionStats())
         logger.debug("Stats reset for subscription {}", id)
-    }
-
-    override fun getDetailedStats(): DetailedSubscriptionStats {
-        val basicStats = stats
-        return DetailedSubscriptionStats(
-            basicStats = basicStats,
-            messageRate = 0.0,
-            errorRate = 0.0,
-            processingTimes = emptyList(),
-            messageTypes = emptyMap(),
-            lastErrors = emptyList()
-        )
     }
 
     // endregion

@@ -112,11 +112,6 @@ interface Subscription {
      */
     fun resetStats()
 
-    /**
-     * 获取详细统计信息
-     */
-    fun getDetailedStats(): DetailedSubscriptionStats
-
     // endregion
 
     // region 工具方法
@@ -155,18 +150,6 @@ data class SubscriptionStats(
     val errorCount: Long = 0L,
     val lastMessageTime: Long? = null,
     val averageProcessingTime: Double = 0.0,
-)
-
-/**
- * 详细订阅统计信息
- */
-data class DetailedSubscriptionStats(
-    val basicStats: SubscriptionStats,
-    val messageRate: Double, // 消息/秒
-    val errorRate: Double,   // 错误/秒
-    val processingTimes: List<Long>, // 最近 N 条消息的处理时间
-    val messageTypes: Map<String, Int>, // 消息类型分布
-    val lastErrors: List<Pair<Long, String>> // 最近错误（时间戳，错误信息）
 )
 
 /**

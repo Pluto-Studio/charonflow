@@ -41,11 +41,6 @@ interface CharonFlow : Closeable {
      */
     val isConnected: Boolean
 
-    /**
-     * 获取连接状态信息
-     */
-    val connectionInfo: ConnectionInfo
-
     // endregion
 
     // region Pub/Sub 模式
@@ -152,13 +147,6 @@ interface CharonFlow : Closeable {
     // region 工具方法
 
     /**
-     * 健康检查
-     *
-     * @return 健康状态，true 表示健康，false 表示不健康
-     */
-    suspend fun healthCheck(): Boolean
-
-    /**
      * 获取统计信息
      *
      * @return 当前统计信息
@@ -172,18 +160,6 @@ interface CharonFlow : Closeable {
 
     // endregion
 }
-
-/**
- * 连接信息
- */
-data class ConnectionInfo(
-    val redisUri: String,
-    val isConnected: Boolean,
-    val connectionTime: Long,
-    val lastActivityTime: Long,
-    val activeSubscriptions: Int,
-    val activeRequests: Int
-)
 
 /**
  * 统计信息

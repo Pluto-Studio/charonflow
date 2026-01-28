@@ -55,18 +55,6 @@ data class CharonFlowConfig(
     val timeout: Duration = 5.seconds,
 
     /**
-     * 是否启用健康检查
-     * 默认启用，定期检查连接状态
-     */
-    val enableHealthCheck: Boolean = true,
-
-    /**
-     * 健康检查间隔
-     * 默认 30 秒
-     */
-    val healthCheckInterval: Duration = 30.seconds,
-
-    /**
      * 是否启用指标收集
      * 默认禁用，按需开启
      */
@@ -75,6 +63,5 @@ data class CharonFlowConfig(
     init {
         require(redisUri.isNotBlank()) { "Redis URI cannot be blank" }
         require(timeout.isPositive()) { "Timeout must be positive" }
-        require(healthCheckInterval.isPositive()) { "Health check interval must be positive" }
     }
 }
