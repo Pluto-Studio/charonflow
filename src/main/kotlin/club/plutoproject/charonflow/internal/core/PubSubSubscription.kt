@@ -5,6 +5,7 @@ import club.plutoproject.charonflow.Subscription
 import club.plutoproject.charonflow.SubscriptionNotFoundException
 import club.plutoproject.charonflow.SubscriptionStats
 import club.plutoproject.charonflow.internal.logger
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -40,6 +41,7 @@ internal class PubSubSubscription(
     private val _isPaused = AtomicBoolean(false)
     private val _handler = AtomicReference(handler)
     private var _onUnsubscribeCallback: (suspend () -> Unit)? = null
+    private val _completionDeferred = CompletableDeferred<Result<Unit>>()
 
     // region 属性
 
@@ -119,10 +121,12 @@ internal class PubSubSubscription(
 
     override suspend fun unsubscribe(): Result<Unit> {
         if (!_isActive.compareAndSet(true, false)) {
+            _completionDeferred.complete(Result.success(Unit))
             return Result.success(Unit)
         }
         updateLastActivityTime()
         _onUnsubscribeCallback?.invoke()
+        _completionDeferred.complete(Result.success(Unit))
         logger.debug("Subscription {} unsubscribed", id)
         return Result.success(Unit)
     }
@@ -166,11 +170,7 @@ internal class PubSubSubscription(
     // region 工具方法
 
     override suspend fun await(): Result<Unit> {
-        while (isActive) {
-            // TODO: 实现等待逻辑
-            delay(100)
-        }
-        return Result.success(Unit)
+        return _completionDeferred.await()
     }
 
     override fun onComplete(callback: (Result<Unit>) -> Unit) {
