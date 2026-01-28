@@ -10,7 +10,7 @@ import java.util.*
  * 包含消息元数据和实际内容。
  */
 @Serializable
-data class Message(
+internal data class Message(
     /**
      * 消息主题
      * 用于 Pub/Sub 模式，标识消息所属的频道/主题

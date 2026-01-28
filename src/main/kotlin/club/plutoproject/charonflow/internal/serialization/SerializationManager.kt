@@ -1,7 +1,7 @@
 package club.plutoproject.charonflow.internal.serialization
 
-import club.plutoproject.charonflow.internal.exceptions.SerializeFailedException
-import club.plutoproject.charonflow.internal.exceptions.TypeNotRegisteredException
+import club.plutoproject.charonflow.SerializeFailedException
+import club.plutoproject.charonflow.TypeNotRegisteredException
 import club.plutoproject.charonflow.internal.logger
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi

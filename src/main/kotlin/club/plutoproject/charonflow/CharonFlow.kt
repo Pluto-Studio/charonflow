@@ -2,7 +2,6 @@ package club.plutoproject.charonflow
 
 import club.plutoproject.charonflow.config.CharonFlowConfig
 import club.plutoproject.charonflow.internal.CharonFlowImpl
-import club.plutoproject.charonflow.internal.core.Subscription
 import java.io.Closeable
 import kotlin.reflect.KClass
 

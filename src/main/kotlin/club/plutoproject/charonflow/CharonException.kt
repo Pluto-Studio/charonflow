@@ -1,4 +1,4 @@
-package club.plutoproject.charonflow.internal.exceptions
+package club.plutoproject.charonflow
 
 import io.lettuce.core.RedisCommandTimeoutException
 import io.lettuce.core.RedisConnectionException

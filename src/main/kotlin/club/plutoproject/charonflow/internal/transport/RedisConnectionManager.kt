@@ -1,7 +1,7 @@
 package club.plutoproject.charonflow.internal.transport
 
 import club.plutoproject.charonflow.config.CharonFlowConfig
-import club.plutoproject.charonflow.internal.exceptions.RedisConnectionException
+import club.plutoproject.charonflow.RedisConnectionException
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
 import io.lettuce.core.api.StatefulRedisConnection

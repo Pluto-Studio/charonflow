@@ -1,4 +1,4 @@
-package club.plutoproject.charonflow.internal.core
+package club.plutoproject.charonflow
 
 /**
  * 订阅接口
