@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.future.await
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.encodeToByteArray
@@ -315,7 +316,7 @@ internal class CharonFlowImpl(
             if (subscribedTopics.add(topic)) {
                 val pubSubConn = connectionManager.getPubSubConnection()
                 pubSubConn.addListener(PubSubMessageListener(this))
-                pubSubConn.sync().subscribe(topic)
+                pubSubConn.async().subscribe(topic).await()
                 logger.debug("Subscribed to Redis topic: {}", topic)
             }
             Result.success(Unit)
@@ -330,7 +331,7 @@ internal class CharonFlowImpl(
         return try {
             if (subscribedTopics.remove(topic)) {
                 val pubSubConn = connectionManager.getPubSubConnection()
-                pubSubConn.sync().unsubscribe(topic)
+                pubSubConn.async().unsubscribe(topic).await()
                 logger.debug("Unsubscribed from Redis topic: {}", topic)
             }
             Result.success(Unit)
