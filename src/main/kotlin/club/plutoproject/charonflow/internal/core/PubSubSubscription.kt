@@ -35,6 +35,7 @@ internal class PubSubSubscription(
     private val _isActive = AtomicBoolean(true)
     private val _isPaused = AtomicBoolean(false)
     private val _handler = AtomicReference(handler)
+    private var _onUnsubscribeCallback: (suspend () -> Unit)? = null
 
     // region 属性
 
@@ -113,10 +114,20 @@ internal class PubSubSubscription(
     // region 取消订阅方法
 
     override suspend fun unsubscribe(): Result<Unit> {
-        _isActive.compareAndSet(true, false)
+        if (!_isActive.compareAndSet(true, false)) {
+            return Result.success(Unit)
+        }
         updateLastActivityTime()
-        // TODO: 实际的订阅取消逻辑
+        _onUnsubscribeCallback?.invoke()
+        logger.debug("Subscription {} unsubscribed", id)
         return Result.success(Unit)
+    }
+
+    /**
+     * 设置取消订阅时的回调
+     */
+    internal fun setOnUnsubscribeCallback(callback: suspend () -> Unit) {
+        _onUnsubscribeCallback = callback
     }
 
     override fun unsubscribeAsync() {

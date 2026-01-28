@@ -1,5 +1,6 @@
 package club.plutoproject.charonflow.internal.core
 
+import club.plutoproject.charonflow.internal.logger
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -7,7 +8,9 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * 管理所有的 Pub/Sub 订阅，提供订阅的增删改查功能。
  */
-internal class PubSubManager {
+internal class PubSubManager(
+    private val redisHandler: RedisSubscriptionHandler? = null
+) {
 
     private val subscriptions = ConcurrentHashMap<String, PubSubSubscription>()
     private val topicIndex = ConcurrentHashMap<String, MutableSet<String>>()
@@ -22,6 +25,21 @@ internal class PubSubManager {
         }
 
         topicIndex.computeIfAbsent(subscription.topic) { mutableSetOf() }.add(subscription.id)
+
+        // 设置取消订阅回调，自动从管理器中移除
+        subscription.setOnUnsubscribeCallback {
+            removeSubscription(subscription.id)
+
+            // 如果该主题没有其他活跃订阅，取消 Redis 订阅
+            if (!hasActiveSubscriptions(subscription.topic)) {
+                try {
+                    redisHandler?.unsubscribeFromRedis(subscription.topic)
+                } catch (e: Exception) {
+                    logger.error("Failed to unsubscribe from Redis topic: {}", subscription.topic, e)
+                }
+            }
+        }
+
         return true
     }
 

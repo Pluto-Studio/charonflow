@@ -253,6 +253,18 @@ class MessageTooLargeException(
     override val code: String = "MESSAGE_TOO_LARGE"
 }
 
+/**
+ * 订阅失败异常
+ */
+class SubscriptionFailedException(
+    message: String = "Subscription failed",
+    cause: Throwable? = null,
+    val topic: String? = null,
+    val operation: String? = null
+) : OperationException(message, cause) {
+    override val code: String = "SUBSCRIPTION_FAILED"
+}
+
 // endregion
 
 // region RPC 相关异常

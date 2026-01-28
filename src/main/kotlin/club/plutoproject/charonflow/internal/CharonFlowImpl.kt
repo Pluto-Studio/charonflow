@@ -7,8 +7,10 @@ import club.plutoproject.charonflow.config.CharonFlowConfig
 import club.plutoproject.charonflow.internal.core.Message
 import club.plutoproject.charonflow.internal.core.PubSubManager
 import club.plutoproject.charonflow.internal.core.PubSubSubscription
+import club.plutoproject.charonflow.internal.core.RedisSubscriptionHandler
 import club.plutoproject.charonflow.Subscription
 import club.plutoproject.charonflow.SerializeFailedException
+import club.plutoproject.charonflow.SubscriptionFailedException
 import club.plutoproject.charonflow.TypeNotRegisteredException
 import club.plutoproject.charonflow.internal.serialization.SerializationManager
 import club.plutoproject.charonflow.internal.serialization.TypeResolver
@@ -35,11 +37,11 @@ internal val logger = LoggerFactory.getLogger("CharonFlow")
 @OptIn(ExperimentalSerializationApi::class)
 internal class CharonFlowImpl(
     override val config: CharonFlowConfig
-) : CharonFlow {
+) : CharonFlow, RedisSubscriptionHandler {
 
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val serializationManager = SerializationManager(config.serializersModule)
-    private val pubSubManager = PubSubManager()
+    private val pubSubManager = PubSubManager(this)
     private val connectionManager = RedisConnectionManager(config)
     private val cbor = Cbor {
         serializersModule = config.serializersModule
@@ -60,14 +62,14 @@ internal class CharonFlowImpl(
 
     // region Pub/Sub 模式
 
-    override fun subscribe(
+    override suspend fun subscribe(
         topic: String,
         handler: suspend (message: Any) -> Unit
     ): Result<Subscription> {
         return subscribeInternal(topic, Any::class, handler)
     }
 
-    override fun <T : Any> subscribe(
+    override suspend fun <T : Any> subscribe(
         topic: String,
         clazz: KClass<T>,
         handler: suspend (message: T) -> Unit
@@ -78,7 +80,7 @@ internal class CharonFlowImpl(
     /**
      * 订阅的内部实现
      */
-    private fun <T : Any> subscribeInternal(
+    private suspend fun <T : Any> subscribeInternal(
         topic: String,
         clazz: KClass<T>,
         handler: suspend (message: T) -> Unit
@@ -105,18 +107,20 @@ internal class CharonFlowImpl(
 
         pubSubManager.addSubscription(subscription)
 
-        // 如果这是该主题的第一个订阅，则订阅 Redis
-        if (subscribedTopics.add(topic)) {
-            try {
-                val pubSubConn = connectionManager.getPubSubConnection()
-                pubSubConn.addListener(PubSubMessageListener(this))
-                pubSubConn.sync().subscribe(topic)
-                logger.debug("Subscribed to Redis topic: {}", topic)
-            } catch (e: Exception) {
-                subscribedTopics.remove(topic)
-                pubSubManager.removeSubscription(subscription.id)
-                return Result.failure(e)
-            }
+        // 订阅 Redis（如果是该主题的第一个订阅）
+        val redisResult = subscribeToRedis(topic)
+        if (redisResult.isFailure) {
+            pubSubManager.removeSubscription(subscription.id)
+            val exception = redisResult.exceptionOrNull()
+                ?: Exception("Unknown error occurred during Redis subscription")
+            return Result.failure(
+                SubscriptionFailedException(
+                    message = "Failed to subscribe to Redis topic: $topic",
+                    cause = exception,
+                    topic = topic,
+                    operation = "subscribe"
+                )
+            )
         }
 
         return Result.success(subscription)
@@ -302,4 +306,38 @@ internal class CharonFlowImpl(
         pubSubManager.close()
         connectionManager.close()
     }
+
+    // region RedisSubscriptionHandler 实现
+
+    override suspend fun subscribeToRedis(topic: String): Result<Unit> {
+        return try {
+            if (subscribedTopics.add(topic)) {
+                val pubSubConn = connectionManager.getPubSubConnection()
+                pubSubConn.addListener(PubSubMessageListener(this))
+                pubSubConn.sync().subscribe(topic)
+                logger.debug("Subscribed to Redis topic: {}", topic)
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            subscribedTopics.remove(topic)
+            logger.error("Failed to subscribe to Redis topic: {}", topic, e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun unsubscribeFromRedis(topic: String): Result<Unit> {
+        return try {
+            if (subscribedTopics.remove(topic)) {
+                val pubSubConn = connectionManager.getPubSubConnection()
+                pubSubConn.sync().unsubscribe(topic)
+                logger.debug("Unsubscribed from Redis topic: {}", topic)
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            logger.error("Failed to unsubscribe from Redis topic: {}", topic, e)
+            Result.failure(e)
+        }
+    }
+
+    // endregion
 }

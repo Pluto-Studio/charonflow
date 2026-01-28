@@ -66,7 +66,7 @@ interface CharonFlow : Closeable {
      * @param handler 消息处理函数，接收反序列化后的消息对象
      * @return 订阅结果，成功返回 Subscription，失败返回错误信息
      */
-    fun subscribe(
+    suspend fun subscribe(
         topic: String,
         handler: suspend (message: Any) -> Unit
     ): Result<Subscription>
@@ -79,7 +79,7 @@ interface CharonFlow : Closeable {
      * @param handler 消息处理函数，接收类型安全的消息对象
      * @return 订阅结果，成功返回 Subscription，失败返回错误信息
      */
-    fun <T : Any> subscribe(
+    suspend fun <T : Any> subscribe(
         topic: String,
         clazz: KClass<T>,
         handler: suspend (message: T) -> Unit
