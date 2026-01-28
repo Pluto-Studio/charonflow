@@ -445,41 +445,6 @@ object ExceptionUtils {
             else -> CharonException.Severity.MEDIUM
         }
     }
-
-    /**
-     * 创建详细的异常信息
-     */
-    fun createDetailedMessage(exception: Throwable, context: Map<String, Any> = emptyMap()): String {
-        val sb = StringBuilder()
-
-        // 基本异常信息
-        sb.append("Exception: ${exception.javaClass.simpleName}\n")
-        sb.append("Message: ${exception.message ?: "No message"}\n")
-
-        // 错误码和严重程度
-        sb.append("Error Code: ${getErrorCode(exception)}\n")
-        sb.append("Severity: ${getSeverity(exception)}\n")
-        sb.append("Retryable: ${isRetryable(exception)}\n")
-
-        // 上下文信息
-        if (context.isNotEmpty()) {
-            sb.append("Context:\n")
-            context.forEach { (key, value) ->
-                sb.append("  $key: $value\n")
-            }
-        }
-
-        // 堆栈跟踪（仅前5行）
-        val stackTrace = exception.stackTrace.take(5)
-        if (stackTrace.isNotEmpty()) {
-            sb.append("Stack Trace (top 5):\n")
-            stackTrace.forEach { element ->
-                sb.append("  at ${element.className}.${element.methodName}(${element.fileName}:${element.lineNumber})\n")
-            }
-        }
-
-        return sb.toString()
-    }
 }
 
 // endregion
