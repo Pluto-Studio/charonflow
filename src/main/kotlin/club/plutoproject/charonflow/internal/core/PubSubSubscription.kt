@@ -5,6 +5,9 @@ import club.plutoproject.charonflow.Subscription
 import club.plutoproject.charonflow.SubscriptionNotFoundException
 import club.plutoproject.charonflow.SubscriptionStats
 import club.plutoproject.charonflow.internal.logger
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -27,7 +30,8 @@ internal class PubSubSubscription(
         averageProcessingTime = 0.0,
     ),
     private val handler: suspend (message: Any) -> Unit,
-    val messageType: String
+    val messageType: String,
+    private val coroutineScope: CoroutineScope
 ) : Subscription {
 
     private var _lastActivityTime: Long = lastActivityTime
@@ -130,8 +134,10 @@ internal class PubSubSubscription(
         _onUnsubscribeCallback = callback
     }
 
-    override fun unsubscribeAsync() {
-        TODO("实际实现异步取消逻辑")
+    override fun unsubscribeAsync(): Deferred<Result<Unit>> {
+        return coroutineScope.async {
+            unsubscribe()
+        }
     }
 
     // endregion

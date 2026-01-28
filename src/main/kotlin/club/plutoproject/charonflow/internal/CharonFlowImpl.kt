@@ -102,7 +102,8 @@ internal class CharonFlowImpl(
                 @Suppress("UNCHECKED_CAST")
                 handler(msg as T)
             },
-            messageType = messageType
+            messageType = messageType,
+            coroutineScope = coroutineScope
         )
 
         pubSubManager.addSubscription(subscription)

@@ -1,5 +1,7 @@
 package club.plutoproject.charonflow
 
+import kotlinx.coroutines.Deferred
+
 /**
  * 订阅接口
  *
@@ -60,9 +62,11 @@ interface Subscription {
     /**
      * 异步取消订阅
      *
-     * 立即返回，在后台取消订阅。
+     * 立即返回 Deferred，在后台取消订阅。
+     *
+     * @return Deferred 对象，可通过 await() 获取取消结果
      */
-    fun unsubscribeAsync()
+    fun unsubscribeAsync(): Deferred<Result<Unit>>
 
     // endregion
 
