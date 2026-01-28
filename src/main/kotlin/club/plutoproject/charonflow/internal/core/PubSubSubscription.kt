@@ -34,6 +34,7 @@ internal class PubSubSubscription(
     private val _stats = AtomicReference(stats)
     private val _isActive = AtomicBoolean(true)
     private val _isPaused = AtomicBoolean(false)
+    private val _handler = AtomicReference(handler)
 
     // region 属性
 
@@ -91,10 +92,20 @@ internal class PubSubSubscription(
     }
 
     override suspend fun updateHandler(handler: suspend (message: Any) -> Unit): Result<Unit> {
-        // TODO: 实现更新逻辑（需要将 handler 存储为成员变量）
+        if (!_isActive.get()) {
+            return Result.failure(
+                SubscriptionNotFoundException(
+                    "Subscription $id is not active",
+                    subscriptionId = id,
+                    topic = topic
+                )
+            )
+        }
+        
+        _handler.set(handler)
         updateLastActivityTime()
-        logger.warn("updateHandler is not yet implemented")
-        return Result.failure(UnsupportedOperationException("updateHandler is not yet implemented"))
+        logger.debug("Handler updated for subscription {}", id)
+        return Result.success(Unit)
     }
 
     // endregion
@@ -169,7 +180,7 @@ internal class PubSubSubscription(
 
         updateLastActivityTime()
         return try {
-            handler(message)
+            _handler.get()(message)
             incrementMessageCount()
             true
         } catch (e: Exception) {
