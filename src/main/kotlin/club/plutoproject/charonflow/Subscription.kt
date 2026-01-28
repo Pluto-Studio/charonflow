@@ -151,8 +151,6 @@ data class SubscriptionStats(
     val errorCount: Long,
     val lastMessageTime: Long?,
     val averageProcessingTime: Double,
-    val isActive: Boolean,
-    val isPaused: Boolean
 )
 
 /**

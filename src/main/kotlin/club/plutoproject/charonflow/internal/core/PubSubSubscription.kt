@@ -6,6 +6,7 @@ import club.plutoproject.charonflow.SubscriptionNotFoundException
 import club.plutoproject.charonflow.SubscriptionStats
 import club.plutoproject.charonflow.internal.logger
 import kotlinx.coroutines.delay
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -18,30 +19,21 @@ internal class PubSubSubscription(
     override val topic: String,
     override val createdAt: Long = System.currentTimeMillis(),
     override val lastActivityTime: Long = System.currentTimeMillis(),
-    private var _isActive: Boolean = true,
-    private var _isPaused: Boolean = false,
     override val messageCount: Long = 0L,
     stats: SubscriptionStats = SubscriptionStats(
         messageCount = 0L,
         errorCount = 0L,
         lastMessageTime = null,
         averageProcessingTime = 0.0,
-        isActive = true,
-        isPaused = false
     ),
-    /**
-     * 消息处理函数
-     */
     private val handler: suspend (message: Any) -> Unit,
-    /**
-     * 订阅的消息类型（FQN）
-     * 用于类型匹配，Any::class 时使用 "kotlin.Any"
-     */
     val messageType: String
 ) : Subscription {
 
     private var _lastActivityTime: Long = lastActivityTime
     private val _stats = AtomicReference(stats)
+    private val _isActive = AtomicBoolean(true)
+    private val _isPaused = AtomicBoolean(false)
 
     // region 属性
 
@@ -49,17 +41,17 @@ internal class PubSubSubscription(
         get() = _stats.get()
 
     override val isActive: Boolean
-        get() = _isActive && !_isPaused
+        get() = _isActive.get() && !_isPaused.get()
 
     override val isPaused: Boolean
-        get() = _isPaused
+        get() = _isPaused.get()
 
     // endregion
 
     // region 订阅管理方法
 
     override suspend fun pause(): Result<Unit> {
-        if (!_isActive) {
+        if (!_isActive.get()) {
             return Result.failure(
                 SubscriptionNotFoundException(
                     "Subscription $id is not active",
@@ -69,14 +61,17 @@ internal class PubSubSubscription(
             )
         }
 
-        _isPaused = true
+        if (_isPaused.get()) {
+            return Result.success(Unit)
+        }
+
+        _isPaused.compareAndSet(false, true)
         updateLastActivityTime()
-        updateStats { it.copy(isPaused = true) }
         return Result.success(Unit)
     }
 
     override suspend fun resume(): Result<Unit> {
-        if (!_isActive) {
+        if (!_isActive.get()) {
             return Result.failure(
                 SubscriptionNotFoundException(
                     "Subscription $id is not active",
@@ -86,9 +81,12 @@ internal class PubSubSubscription(
             )
         }
 
-        _isPaused = false
+        if (!_isPaused.get()) {
+            return Result.success(Unit)
+        }
+
+        _isPaused.compareAndSet(true, false)
         updateLastActivityTime()
-        updateStats { it.copy(isPaused = false) }
         return Result.success(Unit)
     }
 
@@ -104,9 +102,8 @@ internal class PubSubSubscription(
     // region 取消订阅方法
 
     override suspend fun unsubscribe(): Result<Unit> {
-        _isActive = false
+        _isActive.compareAndSet(true, false)
         updateLastActivityTime()
-        updateStats { it.copy(isActive = false) }
         // TODO: 实际的订阅取消逻辑
         return Result.success(Unit)
     }
@@ -179,8 +176,7 @@ internal class PubSubSubscription(
             logger.error(
                 "Handler threw exception in subscription {}, cancelling subscription. Error: {}", id, e.message, e
             )
-            _isActive = false
-            updateStats { it.copy(isActive = false) }
+            _isActive.compareAndSet(true, false)
             false
         }
     }
@@ -193,7 +189,7 @@ internal class PubSubSubscription(
     }
 
     private fun canProcessMessages(): Boolean {
-        return _isActive && !_isPaused
+        return _isActive.get() && !_isPaused.get()
     }
 
     private fun updateLastActivityTime() {
