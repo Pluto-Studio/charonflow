@@ -115,11 +115,11 @@ class PubSubTest {
         val subscriber1Messages = mutableListOf<PubSubTestMessage>()
         val subscriber2Messages = mutableListOf<PubSubTestMessage>()
 
-        val sub1 = charon.subscribe<PubSubTestMessage>(topic, PubSubTestMessage::class) { message ->
+        val sub1 = charon.subscribe(topic, PubSubTestMessage::class) { message ->
             subscriber1Messages.add(message)
         }.getOrThrow()
 
-        val sub2 = charon.subscribe<PubSubTestMessage>(topic, PubSubTestMessage::class) { message ->
+        val sub2 = charon.subscribe(topic, PubSubTestMessage::class) { message ->
             subscriber2Messages.add(message)
         }.getOrThrow()
 
