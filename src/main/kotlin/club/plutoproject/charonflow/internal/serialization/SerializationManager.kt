@@ -155,7 +155,7 @@ internal class SerializationManager(
         return try {
             findSerializer(kClass, fqn)
             true
-        } catch (e: TypeNotRegisteredException) {
+        } catch (_: TypeNotRegisteredException) {
             false
         }
     }

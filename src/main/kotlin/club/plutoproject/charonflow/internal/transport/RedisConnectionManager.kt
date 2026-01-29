@@ -5,8 +5,11 @@ import club.plutoproject.charonflow.RedisConnectionException
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
 import io.lettuce.core.api.StatefulRedisConnection
+import io.lettuce.core.codec.RedisCodec
+import io.lettuce.core.codec.StringCodec
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 
 private val logger = LoggerFactory.getLogger(RedisConnectionManager::class.java)
 
@@ -107,14 +110,14 @@ internal class RedisConnectionManager(
  *
  * 用于在 Redis 中存储 ByteArray 数据。
  */
-private class ByteArrayCodec : io.lettuce.core.codec.RedisCodec<String, ByteArray> {
-    private val stringCodec = io.lettuce.core.codec.StringCodec.UTF8
+private class ByteArrayCodec : RedisCodec<String, ByteArray> {
+    private val stringCodec = StringCodec.UTF8
 
-    override fun decodeKey(bytes: java.nio.ByteBuffer?): String {
+    override fun decodeKey(bytes: ByteBuffer?): String {
         return stringCodec.decodeKey(bytes)
     }
 
-    override fun decodeValue(bytes: java.nio.ByteBuffer?): ByteArray? {
+    override fun decodeValue(bytes: ByteBuffer?): ByteArray? {
         return bytes?.let {
             val array = ByteArray(it.remaining())
             it.get(array)
@@ -122,11 +125,11 @@ private class ByteArrayCodec : io.lettuce.core.codec.RedisCodec<String, ByteArra
         }
     }
 
-    override fun encodeKey(key: String?): java.nio.ByteBuffer? {
+    override fun encodeKey(key: String?): ByteBuffer? {
         return stringCodec.encodeKey(key)
     }
 
-    override fun encodeValue(value: ByteArray?): java.nio.ByteBuffer? {
-        return value?.let { java.nio.ByteBuffer.wrap(it) }
+    override fun encodeValue(value: ByteArray?): ByteBuffer? {
+        return value?.let { ByteBuffer.wrap(it) }
     }
 }

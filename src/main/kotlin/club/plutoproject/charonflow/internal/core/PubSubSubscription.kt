@@ -29,7 +29,7 @@ internal class PubSubSubscription(
         lastMessageTime = null,
         averageProcessingTime = 0.0,
     ),
-    private val handler: suspend (message: Any) -> Unit,
+    handler: suspend (message: Any) -> Unit,
     val messageType: String,
     private val coroutineScope: CoroutineScope
 ) : Subscription {

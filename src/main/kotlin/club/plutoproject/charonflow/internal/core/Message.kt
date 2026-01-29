@@ -41,13 +41,11 @@ internal data class Message(
      */
     val timestamp: Long = System.currentTimeMillis(),
 
-
     /**
      * 消息头
      * 包含额外的元数据
      */
     val headers: Map<String, String> = emptyMap(),
-
 
     /**
      * 消息来源

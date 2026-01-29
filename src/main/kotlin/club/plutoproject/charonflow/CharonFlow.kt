@@ -173,22 +173,6 @@ interface CharonFlow : Closeable {
     ): Result<Subscription>
 
     // endregion
-
-    // region 工具方法
-
-    /**
-     * 获取统计信息
-     *
-     * @return 当前统计信息
-     */
-    fun getStats(): Stats
-
-    /**
-     * 重置统计信息
-     */
-    fun resetStats()
-
-    // endregion
 }
 
 /**

@@ -19,7 +19,7 @@ internal object TypeResolver {
     fun <T : Any> getKClass(fqn: String): KClass<T>? {
         return try {
             Class.forName(fqn).kotlin as KClass<T>
-        } catch (e: ClassNotFoundException) {
+        } catch (_: ClassNotFoundException) {
             null
         }
     }

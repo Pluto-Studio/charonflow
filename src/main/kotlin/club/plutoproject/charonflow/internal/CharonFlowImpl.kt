@@ -191,25 +191,6 @@ internal class CharonFlowImpl(
 
     // endregion
 
-    // region 工具方法
-
-    override fun getStats(): Stats = Stats(
-        messagesPublished = 0L,
-        messagesReceived = 0L,
-        requestsSent = 0L,
-        requestsReceived = 0L,
-        rpcCalls = 0L,
-        errors = 0L,
-        connectionAttempts = 0L,
-        reconnections = 0L
-    )
-
-    override fun resetStats() {
-        // TODO: 实现统计重置
-    }
-
-    // endregion
-
     // region 内部消息处理
 
     /**
