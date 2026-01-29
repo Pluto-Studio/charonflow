@@ -3,6 +3,7 @@ package club.plutoproject.charonflow.internal.transport
 import club.plutoproject.charonflow.RedisConnectionException
 import club.plutoproject.charonflow.config.CharonFlowConfig
 import club.plutoproject.charonflow.internal.logger
+import club.plutoproject.charonflow.internal.retry.RetryExecutor
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
 import io.lettuce.core.api.StatefulRedisConnection
@@ -17,7 +18,8 @@ import java.nio.ByteBuffer
  * 管理 Redis 连接的生命周期，包括普通连接和 Pub/Sub 连接。
  */
 internal class RedisConnectionManager(
-    private val config: CharonFlowConfig
+    private val config: CharonFlowConfig,
+    private val retryExecutor: RetryExecutor = RetryExecutor()
 ) : AutoCloseable {
 
     private val redisClient: RedisClient
@@ -39,41 +41,51 @@ internal class RedisConnectionManager(
     }
 
     /**
-     * 获取普通连接
+     * 获取普通连接（带重试）
      */
-    fun getConnection(): StatefulRedisConnection<String, ByteArray> {
-        if (connection == null || !connection!!.isOpen) {
-            try {
-                connection = redisClient.connect(ByteArrayCodec())
-                logger.debug("Redis connection established")
-            } catch (e: Exception) {
-                throw RedisConnectionException(
-                    message = "Failed to connect to Redis",
-                    cause = e,
-                    redisUri = config.redisUri
-                )
+    suspend fun getConnection(): StatefulRedisConnection<String, ByteArray> {
+        return retryExecutor.executeWithRetry(
+            config = config.retryPolicyConfig.connectionRetry,
+            operationName = "Redis connection"
+        ) {
+            if (connection == null || !connection!!.isOpen) {
+                try {
+                    connection = redisClient.connect(ByteArrayCodec())
+                    logger.debug("Redis connection established")
+                } catch (e: Exception) {
+                    throw RedisConnectionException(
+                        message = "Failed to connect to Redis",
+                        cause = e,
+                        redisUri = config.redisUri
+                    )
+                }
             }
+            connection!!
         }
-        return connection!!
     }
 
     /**
-     * 获取 Pub/Sub 连接
+     * 获取 Pub/Sub 连接（带重试）
      */
-    fun getPubSubConnection(): StatefulRedisPubSubConnection<String, ByteArray> {
-        if (pubSubConnection == null || !pubSubConnection!!.isOpen) {
-            try {
-                pubSubConnection = redisClient.connectPubSub(ByteArrayCodec())
-                logger.debug("Redis Pub/Sub connection established")
-            } catch (e: Exception) {
-                throw RedisConnectionException(
-                    message = "Failed to connect to Redis Pub/Sub",
-                    cause = e,
-                    redisUri = config.redisUri
-                )
+    suspend fun getPubSubConnection(): StatefulRedisPubSubConnection<String, ByteArray> {
+        return retryExecutor.executeWithRetry(
+            config = config.retryPolicyConfig.connectionRetry,
+            operationName = "Redis Pub/Sub connection"
+        ) {
+            if (pubSubConnection == null || !pubSubConnection!!.isOpen) {
+                try {
+                    pubSubConnection = redisClient.connectPubSub(ByteArrayCodec())
+                    logger.debug("Redis Pub/Sub connection established")
+                } catch (e: Exception) {
+                    throw RedisConnectionException(
+                        message = "Failed to connect to Redis Pub/Sub",
+                        cause = e,
+                        redisUri = config.redisUri
+                    )
+                }
             }
+            pubSubConnection!!
         }
-        return pubSubConnection!!
     }
 
     /**

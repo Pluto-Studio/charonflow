@@ -711,6 +711,15 @@ kotlin {
     - 实现类型不匹配静默忽略逻辑（CharonFlowImpl.handleIncomingMessage中检查类型匹配，不匹配则DEBUG日志并跳过）
     - 添加消息分发逻辑（CharonFlowImpl.handleIncomingMessage统一处理接收到的消息）
     - PubSubSubscription添加messageType字段用于类型匹配
+- **2025-01-29**: 实现重试机制
+    - 创建 RetryExecutor 核心类（internal/retry/RetryExecutor.kt）
+    - 创建 RetryContext 上下文类（internal/retry/RetryContext.kt）
+    - 修改 RedisConnectionManager 添加连接重试（getConnection 和 getPubSubConnection）
+    - 修改 CharonFlowImpl 添加消息发布重试（publish 方法）
+    - 修改 CharonFlowImpl 添加订阅操作重试（subscribeToRedis 和 unsubscribeFromRedis）
+    - 重试策略配置（RetryPolicyConfig）现在真正生效：
+        - connectionRetry: 连接操作使用指数退避策略（3次尝试，初始1秒，最大10秒）
+        - messageRetry: 消息发布使用固定退避策略（2次尝试，延迟500毫秒）
 
 ---
 

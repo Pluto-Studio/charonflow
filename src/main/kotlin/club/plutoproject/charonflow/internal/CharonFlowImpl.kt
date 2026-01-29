@@ -12,6 +12,7 @@ import club.plutoproject.charonflow.SubscriptionFailedException
 import club.plutoproject.charonflow.TypeNotRegisteredException
 import club.plutoproject.charonflow.internal.serialization.SerializationManager
 import club.plutoproject.charonflow.internal.serialization.TypeResolver
+import club.plutoproject.charonflow.internal.retry.RetryExecutor
 import club.plutoproject.charonflow.internal.transport.PubSubMessageListener
 import club.plutoproject.charonflow.internal.transport.RedisConnectionManager
 import kotlinx.coroutines.CoroutineScope
@@ -41,7 +42,8 @@ internal class CharonFlowImpl(
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val serializationManager = SerializationManager(config.serializersModule)
     private val pubSubManager = PubSubManager(this)
-    private val connectionManager = RedisConnectionManager(config)
+    private val retryExecutor = RetryExecutor()
+    private val connectionManager = RedisConnectionManager(config, retryExecutor)
     private val cbor = Cbor {
         serializersModule = config.serializersModule
     }
@@ -153,9 +155,14 @@ internal class CharonFlowImpl(
                 bytes.size
             )
 
-            // 使用 Redis 发布
-            val connection = connectionManager.getConnection()
-            connection.sync().publish(topic, messageBytes)
+            // 使用 Redis 发布（带重试）
+            retryExecutor.executeWithRetry(
+                config = config.retryPolicyConfig.messageRetry,
+                operationName = "Publish message to topic '$topic'"
+            ) {
+                val connection = connectionManager.getConnection()
+                connection.sync().publish(topic, messageBytes)
+            }
 
             Result.success(Unit)
         } catch (e: SerializeFailedException) {
@@ -295,10 +302,16 @@ internal class CharonFlowImpl(
     override suspend fun subscribeToRedis(topic: String): Result<Unit> {
         return try {
             if (subscribedTopics.add(topic)) {
-                val pubSubConn = connectionManager.getPubSubConnection()
-                pubSubConn.addListener(PubSubMessageListener(this))
-                pubSubConn.async().subscribe(topic).await()
-                logger.debug("Subscribed to Redis topic: {}", topic)
+                // 使用重试执行器执行订阅操作
+                retryExecutor.executeWithRetry(
+                    config = config.retryPolicyConfig.connectionRetry,
+                    operationName = "Subscribe to Redis topic '$topic'"
+                ) {
+                    val pubSubConn = connectionManager.getPubSubConnection()
+                    pubSubConn.addListener(PubSubMessageListener(this))
+                    pubSubConn.async().subscribe(topic).await()
+                    logger.debug("Subscribed to Redis topic: {}", topic)
+                }
             }
             Result.success(Unit)
         } catch (e: Exception) {
@@ -311,9 +324,15 @@ internal class CharonFlowImpl(
     override suspend fun unsubscribeFromRedis(topic: String): Result<Unit> {
         return try {
             if (subscribedTopics.remove(topic)) {
-                val pubSubConn = connectionManager.getPubSubConnection()
-                pubSubConn.async().unsubscribe(topic).await()
-                logger.debug("Unsubscribed from Redis topic: {}", topic)
+                // 使用重试执行器执行取消订阅操作
+                retryExecutor.executeWithRetry(
+                    config = config.retryPolicyConfig.connectionRetry,
+                    operationName = "Unsubscribe from Redis topic '$topic'"
+                ) {
+                    val pubSubConn = connectionManager.getPubSubConnection()
+                    pubSubConn.async().unsubscribe(topic).await()
+                    logger.debug("Unsubscribed from Redis topic: {}", topic)
+                }
             }
             Result.success(Unit)
         } catch (e: Exception) {
