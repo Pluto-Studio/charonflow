@@ -2,6 +2,9 @@ package club.plutoproject.charonflow.config
 
 import io.lettuce.core.RedisCommandTimeoutException
 import io.lettuce.core.RedisConnectionException
+import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
 import kotlin.math.pow
 import kotlin.reflect.KClass
 import kotlin.time.Duration
@@ -62,9 +65,9 @@ data class RetryConfig(
         RedisConnectionException::class,
         RedisCommandTimeoutException::class,
         // 网络相关异常
-        java.net.ConnectException::class,
-        java.net.SocketTimeoutException::class,
-        java.io.IOException::class
+        ConnectException::class,
+        SocketTimeoutException::class,
+        IOException::class
     )
 ) {
     init {

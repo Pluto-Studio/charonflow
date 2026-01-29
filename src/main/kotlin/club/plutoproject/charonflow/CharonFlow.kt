@@ -1,7 +1,10 @@
 package club.plutoproject.charonflow
 
 import club.plutoproject.charonflow.config.CharonFlowConfig
+import club.plutoproject.charonflow.dsl.CharonFlowConfigDsl
+import club.plutoproject.charonflow.dsl.serialization
 import club.plutoproject.charonflow.internal.CharonFlowImpl
+import kotlinx.serialization.modules.SerializersModule
 import java.io.Closeable
 import kotlin.reflect.KClass
 
@@ -25,6 +28,33 @@ interface CharonFlow : Closeable {
          * @return CharonFlow 实例
          */
         fun create(config: CharonFlowConfig): CharonFlow {
+            return CharonFlowImpl(config)
+        }
+
+        /**
+         * 使用 DSL 创建 CharonFlow 实例
+         *
+         * @param block DSL 配置块
+         * @return CharonFlow 实例
+         *
+         * 示例：
+         * ```kotlin
+         * val charonFlow = CharonFlow.create {
+         *     redisUri = "redis://localhost:6379"
+         *     timeout = 10.seconds
+         *
+         *     serialization {
+         *         encodeDefaults = true
+         *     }
+         *
+         *     connectionPool {
+         *         maxTotal = 10
+         *     }
+         * }
+         * ```
+         */
+        fun create(block: CharonFlowConfigDsl.() -> Unit): CharonFlow {
+            val config = CharonFlowConfigDsl().apply(block).build()
             return CharonFlowImpl(config)
         }
     }
