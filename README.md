@@ -78,7 +78,7 @@ charon.subscribe("topic", Message::class, ignoreSelf = true) { message ->
 }
 ```
 
-### 📄️ 许可
+## 📄️ 许可
 
 [Pluto-Studio/charonflow](https://github.com/Pluto-Studio/charonflow)
 在 [MIT License](https://opensource.org/license/mit) 下许可。
