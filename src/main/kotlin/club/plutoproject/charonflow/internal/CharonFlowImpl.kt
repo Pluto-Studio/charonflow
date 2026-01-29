@@ -1,7 +1,6 @@
 package club.plutoproject.charonflow.internal
 
 import club.plutoproject.charonflow.CharonFlow
-import club.plutoproject.charonflow.Stats
 import club.plutoproject.charonflow.config.CharonFlowConfig
 import club.plutoproject.charonflow.internal.core.Message
 import club.plutoproject.charonflow.internal.core.PubSubManager
@@ -61,17 +60,19 @@ internal class CharonFlowImpl(
 
     override suspend fun subscribe(
         topic: String,
+        ignoreSelf: Boolean?,
         handler: suspend (message: Any) -> Unit
     ): Result<Subscription> {
-        return subscribeInternal(topic, Any::class, handler)
+        return subscribeInternal(topic, Any::class, ignoreSelf, handler)
     }
 
     override suspend fun <T : Any> subscribe(
         topic: String,
         clazz: KClass<T>,
+        ignoreSelf: Boolean?,
         handler: suspend (message: T) -> Unit
     ): Result<Subscription> {
-        return subscribeInternal(topic, clazz, handler)
+        return subscribeInternal(topic, clazz, ignoreSelf, handler)
     }
 
     /**
@@ -80,6 +81,7 @@ internal class CharonFlowImpl(
     private suspend fun <T : Any> subscribeInternal(
         topic: String,
         clazz: KClass<T>,
+        ignoreSelf: Boolean?,
         handler: suspend (message: T) -> Unit
     ): Result<Subscription> {
         if (clazz != Any::class && !serializationManager.isSerializable(clazz)) {
@@ -92,6 +94,8 @@ internal class CharonFlowImpl(
         }
 
         val messageType = clazz.qualifiedName ?: "kotlin.Any"
+        // 使用传入值或全局默认值
+        val shouldIgnoreSelf = ignoreSelf ?: config.ignoreSelfPubSubMessages
         val subscription = PubSubSubscription(
             id = UUID.randomUUID().toString(),
             topic = topic,
@@ -100,7 +104,9 @@ internal class CharonFlowImpl(
                 handler(msg as T)
             },
             messageType = messageType,
-            coroutineScope = coroutineScope
+            coroutineScope = coroutineScope,
+            ignoreSelf = shouldIgnoreSelf,
+            clientId = config.clientId
         )
 
         pubSubManager.addSubscription(subscription)
@@ -249,11 +255,11 @@ internal class CharonFlowImpl(
                 return@forEach
             }
 
-            // 分发到 handler
-            val processed = subscription.handleReceivedMessage(deserializedMessage)
+            // 分发到 handler，传递消息来源用于 ignoreSelf 检查
+            val processed = subscription.handleReceivedMessage(deserializedMessage, message.source)
             if (!processed) {
                 logger.debug(
-                    "Message not processed by subscription {} (possibly paused or handler threw exception)",
+                    "Message not processed by subscription {} (possibly paused, ignored self message, or handler threw exception)",
                     subscription.id
                 )
             }

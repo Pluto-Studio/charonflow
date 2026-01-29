@@ -88,11 +88,13 @@ interface CharonFlow : Closeable {
      * 订阅指定主题（接收所有类型）
      *
      * @param topic 主题名称
+     * @param ignoreSelf 是否忽略自身发送的消息，null 表示使用全局配置
      * @param handler 消息处理函数，接收反序列化后的消息对象
      * @return 订阅结果，成功返回 Subscription，失败返回错误信息
      */
     suspend fun subscribe(
         topic: String,
+        ignoreSelf: Boolean? = null,
         handler: suspend (message: Any) -> Unit
     ): Result<Subscription>
 
@@ -101,12 +103,14 @@ interface CharonFlow : Closeable {
      *
      * @param T 消息类型
      * @param topic 主题名称
+     * @param ignoreSelf 是否忽略自身发送的消息，null 表示使用全局配置
      * @param handler 消息处理函数，接收类型安全的消息对象
      * @return 订阅结果，成功返回 Subscription，失败返回错误信息
      */
     suspend fun <T : Any> subscribe(
         topic: String,
         clazz: KClass<T>,
+        ignoreSelf: Boolean? = null,
         handler: suspend (message: T) -> Unit
     ): Result<Subscription>
 

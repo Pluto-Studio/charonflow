@@ -31,7 +31,9 @@ internal class PubSubSubscription(
     ),
     handler: suspend (message: Any) -> Unit,
     val messageType: String,
-    private val coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope,
+    val ignoreSelf: Boolean = false,
+    val clientId: String = ""
 ) : Subscription {
 
     private var _lastActivityTime: Long = lastActivityTime
@@ -184,10 +186,17 @@ internal class PubSubSubscription(
      * 处理接收到的消息
      *
      * @param message 消息内容
-     * @return 处理结果，true 表示成功处理，false 表示消息被忽略（如暂停状态）
+     * @param messageSource 消息来源的 clientId，用于 ignoreSelf 检查
+     * @return 处理结果，true 表示成功处理，false 表示消息被忽略（如暂停状态或自身消息）
      */
-    internal suspend fun handleReceivedMessage(message: Any): Boolean {
+    internal suspend fun handleReceivedMessage(message: Any, messageSource: String? = null): Boolean {
         if (!canProcessMessages()) {
+            return false
+        }
+
+        // 检查是否需要忽略自身消息
+        if (ignoreSelf && messageSource != null && messageSource == clientId) {
+            logger.debug("Ignoring self message in subscription {} from client {}", id, clientId)
             return false
         }
 

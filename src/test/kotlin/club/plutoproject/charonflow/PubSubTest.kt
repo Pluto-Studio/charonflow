@@ -141,4 +141,124 @@ class PubSubTest {
         sub1.unsubscribe()
         sub2.unsubscribe()
     }
+
+    @Test
+    fun `test ignore self messages`(): Unit = runBlocking {
+        val topic = "ignore-self-topic"
+        val receivedMessages = mutableListOf<PubSubTestMessage>()
+
+        // Subscribe with ignoreSelf = true
+        val sub = charon.subscribe(topic, PubSubTestMessage::class, ignoreSelf = true) { message ->
+            receivedMessages.add(message)
+        }.getOrThrow()
+
+        // Publish a message - should be ignored
+        val msg = PubSubTestMessage(id = 1, content = "Self message")
+        charon.publish(topic, msg).getOrThrow()
+
+        // Wait a bit to ensure message is processed
+        delay(500)
+
+        // Should not receive own message
+        assertEquals(0, receivedMessages.size, "Should not receive self message when ignoreSelf=true")
+
+        sub.unsubscribe()
+    }
+
+    @Test
+    fun `test receive self messages by default`(): Unit = runBlocking {
+        val topic = "receive-self-topic"
+        val receivedMessages = mutableListOf<PubSubTestMessage>()
+
+        // Subscribe without ignoreSelf (default behavior)
+        val sub = charon.subscribe(topic, PubSubTestMessage::class) { message ->
+            receivedMessages.add(message)
+        }.getOrThrow()
+
+        // Publish a message - should be received
+        val msg = PubSubTestMessage(id = 1, content = "Self message")
+        charon.publish(topic, msg).getOrThrow()
+
+        // Wait for message
+        withTimeout(3000) {
+            while (receivedMessages.isEmpty()) {
+                delay(50)
+            }
+        }
+
+        // Should receive own message by default
+        assertEquals(1, receivedMessages.size, "Should receive self message by default")
+        assertEquals(msg.id, receivedMessages[0].id)
+
+        sub.unsubscribe()
+    }
+
+    @Test
+    fun `test global ignoreSelfMessages config`(): Unit = runBlocking {
+        val topic = "global-ignore-topic"
+        val receivedMessages = mutableListOf<PubSubTestMessage>()
+
+        // Create new CharonFlow instance with global ignoreSelfMessages = true
+        val redisUri = "redis://${redis.host}:${redis.getMappedPort(6379)}"
+        val charonWithIgnore = CharonFlow.create {
+            this.redisUri = redisUri
+            ignoreSelfPubSubMessages = true
+        }
+
+        charonWithIgnore.use { charonWithIgnore ->
+            // Subscribe without specifying ignoreSelf - should use global config
+            val sub = charonWithIgnore.subscribe(topic, PubSubTestMessage::class) { message ->
+                receivedMessages.add(message)
+            }.getOrThrow()
+
+            // Publish a message - should be ignored due to global config
+            val msg = PubSubTestMessage(id = 1, content = "Self message")
+            charonWithIgnore.publish(topic, msg).getOrThrow()
+
+            // Wait a bit to ensure message is processed
+            delay(500)
+
+            // Should not receive own message due to global config
+            assertEquals(0, receivedMessages.size, "Should not receive self message when global ignoreSelfMessages=true")
+
+            sub.unsubscribe()
+        }
+    }
+
+    @Test
+    fun `test override global ignoreSelfMessages config`(): Unit = runBlocking {
+        val topic = "override-global-topic"
+        val receivedMessages = mutableListOf<PubSubTestMessage>()
+
+        // Create new CharonFlow instance with global ignoreSelfMessages = true
+        val redisUri = "redis://${redis.host}:${redis.getMappedPort(6379)}"
+        val charonWithIgnore = CharonFlow.create {
+            this.redisUri = redisUri
+            ignoreSelfPubSubMessages = true
+        }
+
+        charonWithIgnore.use { charonWithIgnore ->
+            // Subscribe with ignoreSelf = false - should override global config
+            val sub = charonWithIgnore.subscribe(topic, PubSubTestMessage::class, ignoreSelf = false) { message ->
+                receivedMessages.add(message)
+            }.getOrThrow()
+
+            // Publish a message - should be received because we overrode global config
+            val msg = PubSubTestMessage(id = 1, content = "Self message")
+            charonWithIgnore.publish(topic, msg).getOrThrow()
+
+            // Wait for message
+            withTimeout(3000) {
+                while (receivedMessages.isEmpty()) {
+                    delay(50)
+                }
+            }
+
+            // Should receive own message because we overrode global config
+            assertEquals(1, receivedMessages.size, "Should receive self message when overriding global config")
+            assertEquals(msg.id, receivedMessages[0].id)
+
+            sub.unsubscribe()
+        }
+    }
 }
