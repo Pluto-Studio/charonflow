@@ -12,12 +12,6 @@
 ### 基本使用
 
 ```kotlin
-import club.plutoproject.charonflow.CharonFlow
-import club.plutoproject.charonflow.dsl.charonFlow
-import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.Serializable
-import kotlin.time.Duration.Companion.seconds
-
 @Serializable
 data class Message(
     val id: Int,
@@ -49,8 +43,6 @@ fun main() = runBlocking {
 ### 使用 DSL 配置
 
 ```kotlin
-import club.plutoproject.charonflow.dsl.charonFlow
-
 val config = charonFlow {
     redisUri = "redis://localhost:6379"
     timeout = 10.seconds
