@@ -8,8 +8,9 @@
     </appender>
 
     <!-- CharonFlow 相关包日志级别 -->
-    <!-- 默认使用 INFO 级别，用户可以在自己的配置中覆盖 -->
-    <logger name="club.plutoproject.charonflow" level="INFO"/>
+    <!-- 默认使用 INFO 级别，可通过 -Dclub.plutoproject.charonflow.log.level=DEBUG 覆盖 -->
+    <logger name="club.plutoproject.charonflow" level="${club.plutoproject.charonflow.log.level:-INFO}"/>
+    <logger name="CharonFlow" level="${club.plutoproject.charonflow.log.level:-INFO}"/>
 
     <!-- 第三方库日志级别控制 -->
     <logger name="io.lettuce" level="WARN"/>

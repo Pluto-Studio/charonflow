@@ -1,17 +1,15 @@
 package club.plutoproject.charonflow.internal.transport
 
-import club.plutoproject.charonflow.config.CharonFlowConfig
 import club.plutoproject.charonflow.RedisConnectionException
+import club.plutoproject.charonflow.config.CharonFlowConfig
+import club.plutoproject.charonflow.internal.logger
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
 import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.codec.RedisCodec
 import io.lettuce.core.codec.StringCodec
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
-import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
-
-private val logger = LoggerFactory.getLogger(RedisConnectionManager::class.java)
 
 /**
  * Redis 连接管理器

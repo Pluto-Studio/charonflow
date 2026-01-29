@@ -2,13 +2,12 @@ package club.plutoproject.charonflow.internal.transport
 
 import club.plutoproject.charonflow.internal.core.Message
 import club.plutoproject.charonflow.internal.CharonFlowImpl
+import club.plutoproject.charonflow.internal.logger
 import io.lettuce.core.pubsub.RedisPubSubListener
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.decodeFromByteArray
 import org.slf4j.LoggerFactory
-
-private val logger = LoggerFactory.getLogger(PubSubMessageListener::class.java)
 
 /**
  * Pub/Sub 消息监听器
