@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
+    id("maven-publish")
 }
 
 group = "club.plutoproject.charonflow"
@@ -29,4 +30,26 @@ tasks.test {
 
 kotlin {
     jvmToolchain(21)
+}
+
+val publishUrl = uri(
+    if (version.toString().endsWith("SNAPSHOT")) {
+        "https://maven.nostal.ink/repository/maven-snapshots/"
+    } else {
+        "https://maven.nostal.ink/repository/maven-releases/"
+    }
+)
+
+publishing {
+    repositories {
+        maven {
+            name = "nostal"
+            url = publishUrl
+            credentials(PasswordCredentials::class)
+        }
+    }
+
+    publications.create<MavenPublication>("maven") {
+        from(components["java"])
+    }
 }
