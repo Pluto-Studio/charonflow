@@ -12,10 +12,10 @@ repositories {
 }
 
 dependencies {
-    implementation(libs.lettuce.core)
-    implementation(libs.bundles.kotlinx.serialization)
-    implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.bundles.logging)
+    api(libs.lettuce.core)
+    api(libs.bundles.kotlinx.serialization)
+    api(libs.kotlinx.coroutines.core)
+    api(libs.bundles.logging)
     testImplementation(kotlin("test"))
     testImplementation(libs.bundles.testing)
 }
@@ -39,6 +39,10 @@ val publishUrl = uri(
         "https://maven.nostal.ink/repository/maven-releases/"
     }
 )
+
+java {
+    withSourcesJar()
+}
 
 publishing {
     repositories {
