@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "club.plutoproject.charonflow"
-version = "1.0.0-SNAPSHOT"
+version = project.findProperty("releaseVersion") ?: "1.0.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
