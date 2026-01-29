@@ -8,9 +8,6 @@ import kotlinx.coroutines.Deferred
  * 表示一个活跃的订阅，提供取消订阅和管理订阅的方法。
  */
 interface Subscription {
-
-    // region 属性
-
     /**
      * 订阅 ID
      */
@@ -42,15 +39,6 @@ interface Subscription {
     val messageCount: Long
 
     /**
-     * 订阅统计信息
-     */
-    val stats: SubscriptionStats
-
-    // endregion
-
-    // region 取消订阅方法
-
-    /**
      * 取消订阅
      *
      * 停止接收消息并释放相关资源。
@@ -67,10 +55,6 @@ interface Subscription {
      * @return Deferred 对象，可通过 await() 获取取消结果
      */
     fun unsubscribeAsync(): Deferred<Result<Unit>>
-
-    // endregion
-
-    // region 订阅管理方法
 
     /**
      * 暂停订阅
@@ -103,19 +87,6 @@ interface Subscription {
      */
     suspend fun updateHandler(handler: suspend (message: Any) -> Unit): Result<Unit>
 
-    // endregion
-
-    // region 统计信息
-
-    /**
-     * 重置统计信息
-     */
-    fun resetStats()
-
-    // endregion
-
-    // region 工具方法
-
     /**
      * 等待订阅完成
      *
@@ -138,70 +109,4 @@ interface Subscription {
      * @param callback 错误回调函数
      */
     fun onError(callback: (Throwable) -> Unit)
-
-    // endregion
-}
-
-/**
- * 订阅统计信息
- */
-data class SubscriptionStats(
-    val messageCount: Long = 0L,
-    val errorCount: Long = 0L,
-    val lastMessageTime: Long? = null,
-    val averageProcessingTime: Double = 0.0,
-)
-
-/**
- * 订阅管理器
- *
- * 管理多个订阅，提供批量操作。
- */
-interface SubscriptionManager {
-
-    /**
-     * 获取所有订阅
-     */
-    val subscriptions: List<Subscription>
-
-    /**
-     * 获取活跃订阅数量
-     */
-    val activeSubscriptionCount: Int
-
-    /**
-     * 根据 ID 获取订阅
-     */
-    fun getSubscription(id: String): Subscription?
-
-    /**
-     * 根据主题获取订阅
-     */
-    fun getSubscriptionsByTopic(topic: String): List<Subscription>
-
-    /**
-     * 取消所有订阅
-     *
-     * @return 取消结果，包含每个订阅的取消结果
-     */
-    suspend fun unsubscribeAll(): Map<String, Result<Unit>>
-
-    /**
-     * 暂停所有订阅
-     *
-     * @return 暂停结果，包含每个订阅的暂停结果
-     */
-    suspend fun pauseAll(): Map<String, Result<Unit>>
-
-    /**
-     * 恢复所有订阅
-     *
-     * @return 恢复结果，包含每个订阅的恢复结果
-     */
-    suspend fun resumeAll(): Map<String, Result<Unit>>
-
-    /**
-     * 获取所有订阅的统计信息
-     */
-    fun getAllStats(): Map<String, SubscriptionStats>
 }

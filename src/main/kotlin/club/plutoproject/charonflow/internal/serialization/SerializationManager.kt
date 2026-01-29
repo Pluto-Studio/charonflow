@@ -21,7 +21,6 @@ internal class SerializationManager(
     private val serializersModule: SerializersModule,
     private val cache: SerializerCache = SerializerCache()
 ) {
-
     private val cbor = Cbor {
         serializersModule = this@SerializationManager.serializersModule
     }

@@ -38,7 +38,6 @@ internal val logger = LoggerFactory.getLogger("CharonFlow")
 internal class CharonFlowImpl(
     override val config: CharonFlowConfig
 ) : CharonFlow, RedisSubscriptionHandler {
-
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val serializationManager = SerializationManager(config.serializersModule)
     private val pubSubManager = PubSubManager(this)
@@ -47,18 +46,11 @@ internal class CharonFlowImpl(
     private val cbor = Cbor {
         serializersModule = config.serializersModule
     }
-
     // 已订阅的主题集合（避免重复订阅）
     private val subscribedTopics = mutableSetOf<String>()
 
-    // region 状态管理
-
     override val isConnected: Boolean
         get() = connectionManager.isConnected
-
-    // endregion
-
-    // region Pub/Sub 模式
 
     override suspend fun subscribe(
         topic: String,
@@ -174,38 +166,6 @@ internal class CharonFlowImpl(
         }
     }
 
-    // endregion
-
-    // region 组播和广播模式（MVP 暂不实现）
-
-    override suspend fun joinMulticastGroup(group: String): Result<Unit> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
-
-    override suspend fun leaveMulticastGroup(group: String): Result<Unit> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
-
-    override suspend fun multicast(group: String, message: Any): Result<Unit> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
-
-    override suspend fun onMulticast(
-        group: String,
-        handler: suspend (message: Any, cancel: () -> Unit) -> Unit
-    ): Result<Subscription> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
-
-    override suspend fun broadcast(channel: String, message: Any): Result<Unit> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
-
-    override suspend fun onBroadcast(
-        channel: String,
-        handler: suspend (message: Any, cancel: () -> Unit) -> Unit
-    ): Result<Subscription> =
-        Result.failure(UnsupportedOperationException("Not implemented yet"))
-
-    // endregion
-
-    // region 内部消息处理
-
     /**
      * 处理接收到的消息
      *
@@ -289,15 +249,11 @@ internal class CharonFlowImpl(
         return payloadType == subscriptionType
     }
 
-    // endregion
-
     override fun close() {
         coroutineScope.cancel()
         pubSubManager.close()
         connectionManager.close()
     }
-
-    // region RedisSubscriptionHandler 实现
 
     override suspend fun subscribeToRedis(topic: String): Result<Unit> {
         return try {
@@ -340,6 +296,4 @@ internal class CharonFlowImpl(
             Result.failure(e)
         }
     }
-
-    // endregion
 }

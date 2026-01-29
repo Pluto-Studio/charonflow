@@ -21,7 +21,6 @@ internal class RedisConnectionManager(
     private val config: CharonFlowConfig,
     private val retryExecutor: RetryExecutor = RetryExecutor()
 ) : AutoCloseable {
-
     private val redisClient: RedisClient
     private var connection: StatefulRedisConnection<String, ByteArray>? = null
     private var pubSubConnection: StatefulRedisPubSubConnection<String, ByteArray>? = null

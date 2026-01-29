@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory
 internal class PubSubMessageListener(
     private val charonFlowImpl: CharonFlowImpl
 ) : RedisPubSubListener<String, ByteArray> {
-
     private val cbor = Cbor {
         serializersModule = charonFlowImpl.config.serializersModule
     }

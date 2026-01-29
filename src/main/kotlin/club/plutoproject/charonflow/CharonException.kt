@@ -15,7 +15,6 @@ sealed class CharonException(
     message: String,
     cause: Throwable? = null
 ) : Exception(message, cause) {
-
     /**
      * 错误码
      */
@@ -48,8 +47,6 @@ sealed class CharonException(
         CRITICAL
     }
 }
-
-// region 连接相关异常
 
 /**
  * 连接异常基类
@@ -119,10 +116,6 @@ class ConnectionPoolExhaustedException(
     override val code: String = "CONNECTION_POOL_EXHAUSTED"
 }
 
-// endregion
-
-// region 序列化相关异常
-
 /**
  * 序列化异常基类
  */
@@ -179,10 +172,6 @@ class TypeMismatchException(
 ) : SerializationException(message, cause) {
     override val code: String = "TYPE_MISMATCH"
 }
-
-// endregion
-
-// region 操作相关异常
 
 /**
  * 操作异常基类
@@ -265,10 +254,6 @@ class SubscriptionFailedException(
     override val code: String = "SUBSCRIPTION_FAILED"
 }
 
-// endregion
-
-// region RPC 相关异常
-
 /**
  * RPC 异常基类
  */
@@ -315,10 +300,6 @@ class RpcInvalidArgumentException(
     override val code: String = "RPC_INVALID_ARGUMENT"
 }
 
-// endregion
-
-// region 配置相关异常
-
 /**
  * 配置异常基类
  */
@@ -352,10 +333,6 @@ class MissingConfigurationException(
 ) : ConfigurationException(message, cause) {
     override val code: String = "CONFIGURATION_MISSING"
 }
-
-// endregion
-
-// region 资源相关异常
 
 /**
  * 资源异常基类
@@ -391,10 +368,6 @@ class ResourceLeakException(
 ) : ResourceException(message, cause) {
     override val code: String = "RESOURCE_LEAK"
 }
-
-// endregion
-
-// region 工具函数
 
 /**
  * 异常工具函数
@@ -446,5 +419,3 @@ object ExceptionUtils {
         }
     }
 }
-
-// endregion

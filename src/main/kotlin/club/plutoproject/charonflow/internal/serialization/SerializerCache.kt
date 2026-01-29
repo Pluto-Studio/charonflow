@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentHashMap
  * 缓存永不驱逐，因为类加载是不变的。
  */
 internal class SerializerCache {
-
     private val cache = ConcurrentHashMap<String, KSerializer<*>>()
 
     /**

@@ -6,7 +6,6 @@ package club.plutoproject.charonflow.config
  * 控制序列化器的行为，固定使用 CBOR 格式。
  */
 data class SerializationConfig(
-
     /**
      * 是否编码默认值
      * 默认 true，序列化时会包含字段的默认值
@@ -24,7 +23,6 @@ data class SerializationConfig(
      * 默认 false，严格的 JSON/CBOR 解析
      */
     val isLenient: Boolean = false,
-
 
     /**
      * 是否允许特殊浮点值（NaN, Infinity）

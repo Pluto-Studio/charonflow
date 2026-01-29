@@ -2,7 +2,6 @@ package club.plutoproject.charonflow.internal.core
 
 import club.plutoproject.charonflow.Subscription
 import club.plutoproject.charonflow.SubscriptionNotFoundException
-import club.plutoproject.charonflow.SubscriptionStats
 import club.plutoproject.charonflow.internal.logger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -23,12 +22,6 @@ internal class PubSubSubscription(
     override val createdAt: Long = System.currentTimeMillis(),
     override val lastActivityTime: Long = System.currentTimeMillis(),
     override val messageCount: Long = 0L,
-    stats: SubscriptionStats = SubscriptionStats(
-        messageCount = 0L,
-        errorCount = 0L,
-        lastMessageTime = null,
-        averageProcessingTime = 0.0,
-    ),
     handler: suspend (message: Any) -> Unit,
     val messageType: String,
     private val coroutineScope: CoroutineScope,
@@ -37,7 +30,6 @@ internal class PubSubSubscription(
 ) : Subscription {
 
     private var _lastActivityTime: Long = lastActivityTime
-    private val _stats = AtomicReference(stats)
     private val _isActive = AtomicBoolean(true)
     private val _isPaused = AtomicBoolean(false)
     private val _handler = AtomicReference(handler)
@@ -46,20 +38,10 @@ internal class PubSubSubscription(
     private val _onCompleteCallbacks = CopyOnWriteArrayList<(Result<Unit>) -> Unit>()
     private val _onErrorCallbacks = CopyOnWriteArrayList<(Throwable) -> Unit>()
 
-    // region 属性
-
-    override val stats: SubscriptionStats
-        get() = _stats.get()
-
     override val isActive: Boolean
         get() = _isActive.get() && !_isPaused.get()
-
     override val isPaused: Boolean
         get() = _isPaused.get()
-
-    // endregion
-
-    // region 订阅管理方法
 
     override suspend fun pause(): Result<Unit> {
         if (!_isActive.get()) {
@@ -118,10 +100,6 @@ internal class PubSubSubscription(
         return Result.success(Unit)
     }
 
-    // endregion
-
-    // region 取消订阅方法
-
     override suspend fun unsubscribe(): Result<Unit> {
         if (!_isActive.compareAndSet(true, false)) {
             _completionDeferred.complete(Result.success(Unit))
@@ -149,19 +127,6 @@ internal class PubSubSubscription(
         }
     }
 
-    // endregion
-
-    // region 统计信息
-
-    override fun resetStats() {
-        _stats.set(SubscriptionStats())
-        logger.debug("Stats reset for subscription {}", id)
-    }
-
-    // endregion
-
-    // region 工具方法
-
     override suspend fun await(): Result<Unit> {
         return _completionDeferred.await()
     }
@@ -177,10 +142,6 @@ internal class PubSubSubscription(
     override fun onError(callback: (Throwable) -> Unit) {
         _onErrorCallbacks.add(callback)
     }
-
-    // endregion
-
-    // region 内部方法
 
     /**
      * 处理接收到的消息
@@ -203,7 +164,6 @@ internal class PubSubSubscription(
         updateLastActivityTime()
         return try {
             _handler.get()(message)
-            incrementMessageCount()
             true
         } catch (e: Exception) {
             logger.error(
@@ -216,13 +176,6 @@ internal class PubSubSubscription(
         }
     }
 
-    /**
-     * 增加消息计数
-     */
-    internal fun incrementMessageCount() {
-        updateStats { it.copy(messageCount = it.messageCount + 1) }
-    }
-
     private fun canProcessMessages(): Boolean {
         return _isActive.get() && !_isPaused.get()
     }
@@ -230,17 +183,4 @@ internal class PubSubSubscription(
     private fun updateLastActivityTime() {
         _lastActivityTime = System.currentTimeMillis()
     }
-
-    private fun updateStats(update: (SubscriptionStats) -> SubscriptionStats) {
-        // CAS 并发安全地更新 stats
-        while (true) {
-            val current = _stats.get()
-            val newStats = update(current)
-            if (_stats.compareAndSet(current, newStats)) {
-                break
-            }
-        }
-    }
-
-    // endregion
 }

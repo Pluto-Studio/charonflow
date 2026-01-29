@@ -8,7 +8,6 @@ import kotlin.reflect.KClass
  * 负责类的完全限定名（FQN）与 KClass 之间的双向映射。
  */
 internal object TypeResolver {
-
     /**
      * 根据完全限定名获取 KClass
      * 
