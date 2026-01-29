@@ -1,0 +1,44 @@
+[versions]
+# Kotlin
+kotlin = "2.1.10"
+kotlinx-serialization = "1.7.3"
+kotlinx-coroutines = "1.10.2"
+
+# Redis
+lettuce = "7.2.1.RELEASE"
+
+# Logging
+slf4j = "2.0.16"
+logback = "1.5.26"
+
+# Testing
+junit-jupiter = "6.0.2"
+testcontainers = "2.0.3"
+testcontainers-junit = "1.21.4"
+
+[libraries]
+# Kotlin
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
+kotlinx-serialization-cbor = { module = "org.jetbrains.kotlinx:kotlinx-serialization-cbor", version.ref = "kotlinx-serialization" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+
+# Redis
+lettuce-core = { module = "io.lettuce:lettuce-core", version.ref = "lettuce" }
+
+# Logging
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+# Testing
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
+testcontainers-core = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers-junit" }
+
+[bundles]
+kotlinx-serialization = ["kotlinx-serialization-core", "kotlinx-serialization-cbor"]
+logging = ["slf4j-api", "logback-classic"]
+testing = ["junit-jupiter", "testcontainers-core", "testcontainers-junit-jupiter"]
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
