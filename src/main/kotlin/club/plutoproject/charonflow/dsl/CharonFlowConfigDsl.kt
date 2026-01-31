@@ -29,6 +29,7 @@ class CharonFlowConfigDsl {
     var timeout: Duration = 5.seconds
     var enableMetrics: Boolean = false
     var ignoreSelfPubSubMessages: Boolean = false
+    var classLoader: ClassLoader? = null
 
     fun build(): CharonFlowConfig {
         require(redisUri.isNotBlank()) { "Redis URI cannot be blank" }
@@ -43,7 +44,8 @@ class CharonFlowConfigDsl {
             clientId = clientId,
             timeout = timeout,
             enableMetrics = enableMetrics,
-            ignoreSelfPubSubMessages = ignoreSelfPubSubMessages
+            ignoreSelfPubSubMessages = ignoreSelfPubSubMessages,
+            classLoader = classLoader
         )
     }
 }

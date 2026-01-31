@@ -65,7 +65,12 @@ data class CharonFlowConfig(
      *
      * 默认 false，即接收自身消息。
      */
-    val ignoreSelfPubSubMessages: Boolean = false
+    val ignoreSelfPubSubMessages: Boolean = false,
+
+    /**
+     * 消息接收端寻找消息类使用的 [ClassLoader]，未设置则为默认。
+     */
+    val classLoader: ClassLoader? = null
 ) {
     init {
         require(redisUri.isNotBlank()) { "Redis URI cannot be blank" }

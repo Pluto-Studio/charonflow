@@ -2,6 +2,7 @@ package club.plutoproject.charonflow.internal.serialization
 
 import club.plutoproject.charonflow.SerializeFailedException
 import club.plutoproject.charonflow.TypeNotRegisteredException
+import club.plutoproject.charonflow.config.CharonFlowConfig
 import club.plutoproject.charonflow.internal.logger
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
@@ -19,7 +20,8 @@ import kotlin.reflect.KClass
 @OptIn(ExperimentalSerializationApi::class)
 internal class SerializationManager(
     private val serializersModule: SerializersModule,
-    private val cache: SerializerCache = SerializerCache()
+    private val cache: SerializerCache = SerializerCache(),
+    private val config: CharonFlowConfig,
 ) {
     private val cbor = Cbor {
         serializersModule = this@SerializationManager.serializersModule
@@ -96,7 +98,7 @@ internal class SerializationManager(
      */
     private fun deserializeAsAnyInternal(bytes: ByteArray, payloadType: String): Any? {
         return try {
-            val kClass = TypeResolver.getKClass<Any>(payloadType)
+            val kClass = TypeResolver.getKClass<Any>(payloadType, config.classLoader)
                 ?: throw TypeNotRegisteredException(
                     message = "Type '$payloadType' not found for deserialization",
                     typeName = payloadType

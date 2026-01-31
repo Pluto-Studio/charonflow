@@ -39,7 +39,7 @@ internal class CharonFlowImpl(
     override val config: CharonFlowConfig
 ) : CharonFlow, RedisSubscriptionHandler {
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val serializationManager = SerializationManager(config.serializersModule)
+    private val serializationManager = SerializationManager(serializersModule = config.serializersModule, config = config)
     private val pubSubManager = PubSubManager(this)
     private val retryExecutor = RetryExecutor()
     private val connectionManager = RedisConnectionManager(config, retryExecutor)
@@ -202,9 +202,11 @@ internal class CharonFlowImpl(
                 }
 
                 else -> {
+                    // 若没有配置则为 null，在 TypeResolver 里会调用默认行为
+                    val classLoader = config.classLoader
                     // 获取目标类型的 KClass
                     @Suppress("UNCHECKED_CAST")
-                    val targetClass = TypeResolver.getKClass<Any>(subscription.messageType)
+                    val targetClass = TypeResolver.getKClass<Any>(subscription.messageType, classLoader)
                     if (targetClass == null) {
                         logger.warn("Cannot find class for type: {}", subscription.messageType)
                         return@forEach

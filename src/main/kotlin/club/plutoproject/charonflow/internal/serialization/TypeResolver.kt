@@ -1,23 +1,30 @@
 package club.plutoproject.charonflow.internal.serialization
 
+import club.plutoproject.charonflow.internal.logger
 import kotlin.reflect.KClass
 
 /**
  * 类型解析器
- * 
+ *
  * 负责类的完全限定名（FQN）与 KClass 之间的双向映射。
  */
 internal object TypeResolver {
     /**
      * 根据完全限定名获取 KClass
-     * 
+     *
      * @param fqn 类的完全限定名
      * @return 对应的 KClass，如果类未找到则返回 null
      */
     @Suppress("UNCHECKED_CAST")
-    fun <T : Any> getKClass(fqn: String): KClass<T>? {
+    fun <T : Any> getKClass(fqn: String, classLoader: ClassLoader?): KClass<T>? {
         return try {
-            Class.forName(fqn).kotlin as KClass<T>
+            if (classLoader != null) {
+                logger.debug("Loading class '{}' using ClassLoader: {}", fqn, classLoader)
+                Class.forName(fqn, false, classLoader).kotlin as KClass<T>
+            } else {
+                logger.debug("Loading class '{}' using default ClassLoader", fqn)
+                Class.forName(fqn).kotlin as KClass<T>
+            }
         } catch (_: ClassNotFoundException) {
             null
         }
