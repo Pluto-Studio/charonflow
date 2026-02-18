@@ -80,43 +80,8 @@ class ConnectionTimeoutException(
 ) : ConnectionException(message, cause) {
     override val code: String = "CONNECTION_TIMEOUT"
 }
-
 /**
- * 连接被拒绝异常
- */
-class ConnectionRefusedException(
-    message: String = "Connection refused",
-    cause: Throwable? = null,
-    val host: String? = null,
-    val port: Int? = null
-) : ConnectionException(message, cause) {
-    override val code: String = "CONNECTION_REFUSED"
-}
 
-/**
- * 连接丢失异常
- */
-class ConnectionLostException(
-    message: String = "Connection lost",
-    cause: Throwable? = null,
-    val lastActivityTime: Long? = null
-) : ConnectionException(message, cause) {
-    override val code: String = "CONNECTION_LOST"
-}
-
-/**
- * 连接池耗尽异常
- */
-class ConnectionPoolExhaustedException(
-    message: String = "Connection pool exhausted",
-    cause: Throwable? = null,
-    val maxConnections: Int? = null,
-    val activeConnections: Int? = null
-) : ConnectionException(message, cause) {
-    override val code: String = "CONNECTION_POOL_EXHAUSTED"
-}
-
-/**
  * 序列化异常基类
  */
 sealed class SerializationException(
@@ -206,18 +171,6 @@ class OperationFailedException(
 ) : OperationException(message, cause) {
     override val code: String = "OPERATION_FAILED"
 }
-
-/**
- * 主题不存在异常
- */
-class TopicNotFoundException(
-    message: String = "Topic not found",
-    cause: Throwable? = null,
-    val topic: String? = null
-) : OperationException(message, cause) {
-    override val code: String = "TOPIC_NOT_FOUND"
-}
-
 /**
  * 订阅不存在异常
  */
@@ -229,19 +182,6 @@ class SubscriptionNotFoundException(
 ) : OperationException(message, cause) {
     override val code: String = "SUBSCRIPTION_NOT_FOUND"
 }
-
-/**
- * 消息太大异常
- */
-class MessageTooLargeException(
-    message: String = "Message too large",
-    cause: Throwable? = null,
-    val messageSize: Long? = null,
-    val maxSize: Long? = null
-) : OperationException(message, cause) {
-    override val code: String = "MESSAGE_TOO_LARGE"
-}
-
 /**
  * 订阅失败异常
  */
@@ -254,51 +194,7 @@ class SubscriptionFailedException(
     override val code: String = "SUBSCRIPTION_FAILED"
 }
 
-/**
- * RPC 异常基类
- */
-sealed class RpcException(
-    message: String,
-    cause: Throwable? = null,
-    override val severity: Severity = Severity.MEDIUM
-) : CharonException(message, cause) {
-    override val retryable: Boolean = false
-}
 
-/**
- * RPC 方法未找到异常
- */
-class RpcMethodNotFoundException(
-    message: String = "RPC method not found",
-    cause: Throwable? = null,
-    val method: String? = null
-) : RpcException(message, cause) {
-    override val code: String = "RPC_METHOD_NOT_FOUND"
-}
-
-/**
- * RPC 调用失败异常
- */
-class RpcCallFailedException(
-    message: String = "RPC call failed",
-    cause: Throwable? = null,
-    val method: String? = null,
-    val error: String? = null
-) : RpcException(message, cause) {
-    override val code: String = "RPC_CALL_FAILED"
-}
-
-/**
- * RPC 参数无效异常
- */
-class RpcInvalidArgumentException(
-    message: String = "Invalid RPC argument",
-    cause: Throwable? = null,
-    val method: String? = null,
-    val argument: String? = null
-) : RpcException(message, cause) {
-    override val code: String = "RPC_INVALID_ARGUMENT"
-}
 
 /**
  * 配置异常基类
@@ -333,42 +229,6 @@ class MissingConfigurationException(
 ) : ConfigurationException(message, cause) {
     override val code: String = "CONFIGURATION_MISSING"
 }
-
-/**
- * 资源异常基类
- */
-sealed class ResourceException(
-    message: String,
-    cause: Throwable? = null,
-    override val severity: Severity = Severity.HIGH
-) : CharonException(message, cause) {
-    override val retryable: Boolean = false
-}
-
-/**
- * 资源耗尽异常
- */
-class ResourceExhaustedException(
-    message: String = "Resource exhausted",
-    cause: Throwable? = null,
-    val resourceType: String? = null,
-    val limit: Long? = null
-) : ResourceException(message, cause) {
-    override val code: String = "RESOURCE_EXHAUSTED"
-}
-
-/**
- * 资源泄漏异常
- */
-class ResourceLeakException(
-    message: String = "Resource leak detected",
-    cause: Throwable? = null,
-    val resourceType: String? = null,
-    val count: Int? = null
-) : ResourceException(message, cause) {
-    override val code: String = "RESOURCE_LEAK"
-}
-
 /**
  * 异常工具函数
  */

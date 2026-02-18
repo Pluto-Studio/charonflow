@@ -27,7 +27,6 @@ class CharonFlowConfigDsl {
     internal var retryPolicyConfigDsl: RetryPolicyConfigDsl? = null
     var clientId: String = UUID.randomUUID().toString()
     var timeout: Duration = 5.seconds
-    var enableMetrics: Boolean = false
     var ignoreSelfPubSubMessages: Boolean = false
     var classLoader: ClassLoader? = null
 
@@ -43,7 +42,6 @@ class CharonFlowConfigDsl {
             retryPolicyConfig = retryPolicyConfigDsl?.build() ?: RetryPolicyConfig(),
             clientId = clientId,
             timeout = timeout,
-            enableMetrics = enableMetrics,
             ignoreSelfPubSubMessages = ignoreSelfPubSubMessages,
             classLoader = classLoader
         )

@@ -55,12 +55,6 @@ data class CharonFlowConfig(
     val timeout: Duration = 5.seconds,
 
     /**
-     * 是否启用指标收集
-     * 默认禁用，按需开启
-     */
-    val enableMetrics: Boolean = false,
-
-    /**
      * 订阅时忽略自身发送的 Pub/Sub 消息，未在 [club.plutoproject.charonflow.CharonFlow.subscribe] 中指定时使用此处的默认值。
      *
      * 默认 false，即接收自身消息。
