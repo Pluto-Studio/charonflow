@@ -12,7 +12,7 @@ slf4j = "2.0.17"
 logback = "1.5.26"
 
 # Testing
-junit-jupiter = "6.0.2"
+junit-jupiter = "6.0.3"
 testcontainers = "2.0.3"
 testcontainers-junit = "1.21.4"
 
