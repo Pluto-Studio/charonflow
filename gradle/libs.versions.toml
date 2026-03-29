@@ -5,7 +5,7 @@ kotlinx-serialization = "1.10.0"
 kotlinx-coroutines = "1.10.2"
 
 # Redis
-lettuce = "7.2.1.RELEASE"
+lettuce = "7.4.0.RELEASE"
 
 # Logging
 slf4j = "2.0.17"
